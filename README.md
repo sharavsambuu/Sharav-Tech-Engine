@@ -8,6 +8,7 @@ used library list and tools :
     - GLM
     - Assimp
     - SOIL
+    - GLFW
     - Mingw + Netbeans 7.4 + Windows 7
     
 lib linking flags 
