@@ -55,6 +55,10 @@ glm::mat4 modelMatrix;
 glm::mat4 viewMatrix;
 glm::mat4 projectionMatrix;
 
+
+GLuint simpleFBO; // frame buffer object
+
+
 void initWindow();
 void disposeWindow();
 void handleKeyboardInput(GLFWwindow *window, int key, int scancode, int action, int mods);
@@ -122,6 +126,7 @@ int main(int argc, char** argv) {
     SceneObject *vehicleObject = NULL;
     //filePath = "models/phoenix_ugv.md2";
     filePath = "models/R8.obj";
+    //filePath = "models/mech.obj";
     scene = importer.ReadFile(
             filePath.c_str(),
             aiProcess_OptimizeGraph |
@@ -145,6 +150,28 @@ int main(int argc, char** argv) {
     for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
         processMesh(scene->mMeshes[i], vehicleObject);
     }
+
+/*
+    glGenFramebuffers(1, &simpleFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, simpleFBO);
+
+    GLuint colorAttachmentTexture;
+    glGenTextures(1, &colorAttachmentTexture);
+    glBindTexture(GL_TEXTURE_2D, colorAttachmentTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    GLuint depthAttachmentRenderBuffer;
+    glGenRenderbuffers(1, &depthAttachmentRenderBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthAttachmentRenderBuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthAttachmentRenderBuffer);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorAttachmentTexture, 0);
+    GLenum drawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, drawBuffers);
+*/
 
     projectionMatrix = glm::mat4(1.0f);
     viewMatrix = glm::mat4(1.0f);
@@ -184,11 +211,12 @@ int main(int argc, char** argv) {
         glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
         sceneObject->render(programID);
         glUseProgram(0);
-        
+
         glUseProgram(programID);
         static float rotationAngle = 0.0f;
         rotationAngle += 5 * deltaTime;
         modelMatrix = vehicleObject->getModelMatrix();
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(10, 10, 10));
         modelMatrix = glm::rotate(modelMatrix, rotationAngle, glm::vec3(0, 1, 0));
         mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
         normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
@@ -200,7 +228,7 @@ int main(int argc, char** argv) {
         glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
         vehicleObject->render(programID);
         glUseProgram(0);
-         
+
         glfwSwapBuffers(window);
         glfwPollEvents();
         double lastTime = glfwGetTime();
@@ -275,7 +303,6 @@ void processMesh(aiMesh* mesh, SceneObject *object) {
 }
 
 void processMaterial(aiMaterial* material, int index, SceneObject *object) {
-    //MaterialManager *mm = MaterialManager::getSingleton();
     MaterialManager *mm = object->mm;
     std::cout << "================ ID " << index << "====================" << std::endl;
 
@@ -405,7 +432,7 @@ void initWindow() {
         return;
     }
 
-    window = glfwCreateWindow(windowWidth, windowHeight, "OpenGL ASSIMP", NULL, NULL);
+    window = glfwCreateWindow(windowWidth, windowHeight, "SHARAV TECH ENGINE", NULL, NULL);
     if (!window) {
         std::cout << "Error: Failed to create window.\n";
         glfwTerminate();

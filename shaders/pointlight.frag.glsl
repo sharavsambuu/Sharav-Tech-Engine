@@ -48,13 +48,6 @@ void main(void)
     vec4 resSpecularColor = vec4(0, 0, 0, 0);
     vec4 resultColor      = vec4(0, 0, 0, 0);
 
-    // ambient calculation
-    float ambientFraction = 0.25;
-    if (hasAmbientMap != 0) {
-        resAmbientColor = vec4((ambientFraction * lightColor * ambientColor.xyz).xyz, 1.0);
-    } else {
-        resAmbientColor = vec4((ambientFraction * lightColor * material_ambient_color).xyz, 1.0);
-    }
     
     vec3 normal = normalize(vNormal);
     if (hasNormalMap != 0) {
@@ -70,6 +63,16 @@ void main(void)
         resDiffuseColor = vec4((lightColor * diffuseColor.xyz).xyz, 1.0);
     } else {
         resDiffuseColor = vec4((lightColor * material_diffuse_color).xyz, 1.0);
+    }
+
+    // ambient calculation
+    float ambientFraction = 0.25;
+    //float ambientFraction = 1.0;
+    if (hasAmbientMap != 0) {
+        resAmbientColor = vec4((ambientFraction * lightColor * ambientColor.xyz).xyz, 1.0);
+    } else {
+        // resAmbientColor = vec4((ambientFraction * lightColor * material_ambient_color).xyz, 1.0);
+        resAmbientColor = vec4((ambientFraction * lightColor * resDiffuseColor.xyz).xyz, 1.0);
     }
 
     // specular calculation, blinn-phong
