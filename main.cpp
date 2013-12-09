@@ -41,6 +41,11 @@ bool wKeyPressed;
 bool sKeyPressed;
 bool aKeyPressed;
 bool dKeyPressed;
+
+bool doGaus = true;
+bool doDOF = true;
+
+
 double mouseX, mouseY;
 float speed = 150.09f;
 float mouseSpeed = 0.04f;
@@ -113,7 +118,7 @@ int main(int argc, char** argv) {
     sm->AttachShaderToProgram("gaus", "gausFragment");
     sm->LinkProgramObject("gaus");
     std::cout << "Gaus ID is " << (*sm)["gaus"]->GetID() << std::endl;
-    
+
 
     SceneObject *sceneObject = new SceneObject();
     std::string filePath = "models/sponza.obj";
@@ -215,12 +220,12 @@ int main(int argc, char** argv) {
         -1.0f, 1.0f, 0.0f,
         1.0f, -1.0f, 0.0f,
         1.0f, 1.0f, 0.0f,
-    };    
+    };
     GLuint quadBufferID;
     glGenBuffers(2, &quadBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
     glBufferData(GL_ARRAY_BUFFER, sizeof (quadVertices), quadVertices, GL_STATIC_DRAW);
-    
+
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_CULL_FACE);
@@ -247,7 +252,7 @@ int main(int argc, char** argv) {
     GLuint programID = (*sm)["phong"]->GetID();
     GLuint quadProgramID = (*sm)["quad"]->GetID();
     GLuint gausProgramID = (*sm)["gaus"]->GetID();
-    
+
     float deltaTime = 0.0f;
     float startTime = glfwGetTime();
     float buffTime = 0.0;
@@ -301,42 +306,45 @@ int main(int argc, char** argv) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         //******************** END OF THE DRAWING SCENE ************************
 
-        for (int i=0; i<10; i++) {
         //******************** STARTING OF POST PROCESSING *********************
-        // PING PONGING between attachments
-        glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
-        glViewport(0, 0, windowWidth, windowHeight);
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-        glDisable(GL_DEPTH_TEST);
-        glUseProgram(gausProgramID);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
-        glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
-        glUniform1i(glGetUniformLocation(gausProgramID, "isVertical"), 1);
-        glUniform2f(glGetUniformLocation(gausProgramID, "pixelSize") , 1.0f/windowWidth, 1.0f/windowHeight);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-        glDrawArrays(GL_TRIANGLES, 0, 6); 
-        glDisableVertexAttribArray(0);        
-        glUseProgram(0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[0], 0);
-        glUseProgram(gausProgramID);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, colourTexture[1]);
-        glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
-        glUniform1i(glGetUniformLocation(gausProgramID, "isVertical"), 0);
-        glUniform2f(glGetUniformLocation(gausProgramID, "pixelSize") , 1.0f/windowWidth, 1.0f/windowHeight);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-        glDrawArrays(GL_TRIANGLES, 0, 6); 
-        glDisableVertexAttribArray(0);        
-        glUseProgram(0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        //******************** END OF THE POST PROCESSING **********************
+        if (doGaus == true) {
+            for (int i = 0; i < 10; i++) {
+                // PING PONGING between attachments
+                glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
+                glViewport(0, 0, windowWidth, windowHeight);
+                glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+                glDisable(GL_DEPTH_TEST);
+                glUseProgram(gausProgramID);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
+                glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
+                glUniform1i(glGetUniformLocation(gausProgramID, "isVertical"), 1);
+                glUniform2f(glGetUniformLocation(gausProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+                glEnableVertexAttribArray(0);
+                glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                glDisableVertexAttribArray(0);
+                glUseProgram(0);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[0], 0);
+                glUseProgram(gausProgramID);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, colourTexture[1]);
+                glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
+                glUniform1i(glGetUniformLocation(gausProgramID, "isVertical"), 0);
+                glUniform2f(glGetUniformLocation(gausProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+                glEnableVertexAttribArray(0);
+                glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                glDisableVertexAttribArray(0);
+                glUseProgram(0);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
         }
+        //******************** END OF THE POST PROCESSING **********************
+
         glEnable(GL_DEPTH_TEST);
 
         // TO PRESENT PROCESSED FRAME TO THE SCREEN
@@ -350,8 +358,8 @@ int main(int argc, char** argv) {
         glUniform1i(glGetUniformLocation(quadProgramID, "uScreenTex"), 0);
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-        glDrawArrays(GL_TRIANGLES, 0, 6); 
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
         glDisableVertexAttribArray(0);
         glUseProgram(0);
 
@@ -369,7 +377,7 @@ int main(int argc, char** argv) {
         }
         animationTime += deltaTime;
     }
-    
+
     delete sceneObject;
     delete vehicleObject;
     glDeleteFramebuffers(1, &bufferFBO);
@@ -603,6 +611,10 @@ void handleKeyboardInput(GLFWwindow *window, int key, int scancode, int action, 
         aKeyPressed = false;
     else if (key == GLFW_KEY_D && action == GLFW_RELEASE)
         dKeyPressed = false;
+    else if (key == GLFW_KEY_1 && action == GLFW_RELEASE)
+        doGaus = !doGaus;
+    else if (key == GLFW_KEY_2 && action == GLFW_RELEASE)
+        doDOF = !doDOF;
 }
 
 void processInput(float dt) {

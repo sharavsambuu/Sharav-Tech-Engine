@@ -111,8 +111,9 @@ void main(void)
     if (hasOpacityMap!=0){
         if (opacityColor.rgb==vec3(0,0,0))
             discard;
-        else
+        else {
             out_color = resultColor;
+        }
     } else {
         out_color = resultColor;
     }
