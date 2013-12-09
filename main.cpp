@@ -102,8 +102,20 @@ int main(int argc, char** argv) {
     sm->LinkProgramObject("quad");
     std::cout << "Quad Program ID is " << (*sm)["quad"]->GetID() << std::endl;
 
+    sm->CreateShaderProgram("gaus");
+    sm->AttachShader("gausVertex", VERTEX);
+    sm->AttachShader("gausFragment", FRAGMENT);
+    sm->LoadShaderSource("gausVertex", "shaders/gaus.vert.glsl");
+    sm->LoadShaderSource("gausFragment", "shaders/gaus.frag.glsl");
+    sm->CompileShader("gausVertex");
+    sm->CompileShader("gausFragment");
+    sm->AttachShaderToProgram("gaus", "gausVertex");
+    sm->AttachShaderToProgram("gaus", "gausFragment");
+    sm->LinkProgramObject("gaus");
+    std::cout << "Gaus ID is " << (*sm)["gaus"]->GetID() << std::endl;
+    
 
-    SceneObject *sceneObject = NULL;
+    SceneObject *sceneObject = new SceneObject();
     std::string filePath = "models/sponza.obj";
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(
@@ -122,7 +134,6 @@ int main(int argc, char** argv) {
         std::cout << "error in loading file : " << importer.GetErrorString() << std::endl;
         return 1;
     }
-    sceneObject = new SceneObject();
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         processMaterial(scene->mMaterials[i], i, sceneObject);
     }
@@ -130,7 +141,7 @@ int main(int argc, char** argv) {
         processMesh(scene->mMeshes[i], sceneObject);
     }
 
-    SceneObject *vehicleObject = NULL;
+    SceneObject *vehicleObject = new SceneObject();
     //filePath = "models/phoenix_ugv.md2";
     //filePath = "models/jeepwrangler.obj";
     filePath = "models/R8.obj";
@@ -150,7 +161,6 @@ int main(int argc, char** argv) {
         std::cout << "error in loading file : " << importer.GetErrorString() << std::endl;
         return 1;
     }
-    vehicleObject = new SceneObject();
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         processMaterial(scene->mMaterials[i], i, vehicleObject);
     }
@@ -160,13 +170,7 @@ int main(int argc, char** argv) {
 
     /////////////////////////////   COOKING   //////////////////////////////////
     // test cooking area
-    GLuint tex_2d = SOIL_load_OGL_texture
-            (
-            "models/BatteredRobot.png",
-            SOIL_LOAD_AUTO,
-            SOIL_CREATE_NEW_ID,
-            SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT
-            );
+    // 
     // end of test cooking area
 
 
@@ -203,9 +207,7 @@ int main(int argc, char** argv) {
         std::cout << "it seems like FBO is created and it's good to go" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    glUseProgram((*sm)["quad"]->GetID());
-    GLuint quadBufferID;
+    // screen aligned quads
     const GLfloat quadVertices[] = {
         -1.0f, -1.0f, 0.0f,
         1.0f, -1.0f, 0.0f,
@@ -214,13 +216,11 @@ int main(int argc, char** argv) {
         1.0f, -1.0f, 0.0f,
         1.0f, 1.0f, 0.0f,
     };    
-    glEnableVertexAttribArray(0);
+    GLuint quadBufferID;
     glGenBuffers(2, &quadBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
     glBufferData(GL_ARRAY_BUFFER, sizeof (quadVertices), quadVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof (quadVertices[0]), (GLvoid*) 0);
-    glUseProgram(0);
-
+    
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_CULL_FACE);
@@ -246,6 +246,8 @@ int main(int argc, char** argv) {
 
     GLuint programID = (*sm)["phong"]->GetID();
     GLuint quadProgramID = (*sm)["quad"]->GetID();
+    GLuint gausProgramID = (*sm)["gaus"]->GetID();
+    
     float deltaTime = 0.0f;
     float startTime = glfwGetTime();
     float buffTime = 0.0;
@@ -300,15 +302,34 @@ int main(int argc, char** argv) {
         //******************** END OF THE DRAWING SCENE ************************
 
         //******************** STARTING OF POST PROCESSING *********************
-        ///glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
-        //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
-        //glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-        //glDisable(GL_DEPTH_TEST);
-        // use screen space quad shader here
-        // BIG TODO!!!!!
-        // 
-
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // PING PONGING between attachments
+        glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
+        glViewport(0, 0, windowWidth, windowHeight);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(gausProgramID);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
+        glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        glDrawArrays(GL_TRIANGLES, 0, 6); 
+        glDisableVertexAttribArray(0);        
+        glUseProgram(0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[0], 0);
+        glUseProgram(gausProgramID);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colourTexture[1]);
+        glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        glDrawArrays(GL_TRIANGLES, 0, 6); 
+        glDisableVertexAttribArray(0);        
+        glUseProgram(0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         //******************** END OF THE POST PROCESSING **********************
         glEnable(GL_DEPTH_TEST);
 
@@ -319,7 +340,8 @@ int main(int argc, char** argv) {
         glUseProgram(quadProgramID);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
-        glUniform1i(glGetUniformLocation(quadProgramID, "canvasTexture"), 0);
+        //glBindTexture(GL_TEXTURE_2D, depthTexture);
+        glUniform1i(glGetUniformLocation(quadProgramID, "uScreenTex"), 0);
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -341,16 +363,14 @@ int main(int argc, char** argv) {
         }
         animationTime += deltaTime;
     }
-
-    glDeleteTextures(1, &tex_2d);
-
-    glDeleteTextures(2, colourTexture);
-    glDeleteTextures(1, &depthTexture);
-    glDeleteFramebuffers(1, &bufferFBO);
-    glDeleteFramebuffers(1, &processFBO);
-    glDeleteBuffers(1, &quadBufferID);
+    
     delete sceneObject;
     delete vehicleObject;
+    glDeleteFramebuffers(1, &bufferFBO);
+    glDeleteFramebuffers(1, &processFBO);
+    glDeleteTextures(2, colourTexture);
+    glDeleteTextures(1, &depthTexture);
+    glDeleteBuffers(1, &quadBufferID);
     delete ShaderManager::getSingleton();
     disposeWindow();
     return 0;
