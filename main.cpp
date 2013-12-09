@@ -28,6 +28,7 @@
 #include "ShaderManager.hpp"
 #include "Shader.hpp"
 #include "SceneObject.hpp"
+#include <SOIL.h>
 
 using namespace std;
 
@@ -76,6 +77,7 @@ int main(int argc, char** argv) {
     initWindow();
     glfwSetKeyCallback(window, handleKeyboardInput);
     ShaderManager* sm = ShaderManager::getSingleton();
+
     sm->CreateShaderProgram("phong");
     sm->AttachShader("phongVertex", VERTEX);
     sm->AttachShader("phongFragment", FRAGMENT);
@@ -86,7 +88,20 @@ int main(int argc, char** argv) {
     sm->AttachShaderToProgram("phong", "phongVertex");
     sm->AttachShaderToProgram("phong", "phongFragment");
     sm->LinkProgramObject("phong");
-    std::cout << "ShaderProgram ID is " << (*sm)["phong"]->GetID() << std::endl;
+    std::cout << "Phong Program ID is " << (*sm)["phong"]->GetID() << std::endl;
+
+    sm->CreateShaderProgram("quad");
+    sm->AttachShader("quadVertex", VERTEX);
+    sm->AttachShader("quadFragment", FRAGMENT);
+    sm->LoadShaderSource("quadVertex", "shaders/quad.vert.glsl");
+    sm->LoadShaderSource("quadFragment", "shaders/quad.frag.glsl");
+    sm->CompileShader("quadVertex");
+    sm->CompileShader("quadFragment");
+    sm->AttachShaderToProgram("quad", "quadVertex");
+    sm->AttachShaderToProgram("quad", "quadFragment");
+    sm->LinkProgramObject("quad");
+    std::cout << "Quad Program ID is " << (*sm)["quad"]->GetID() << std::endl;
+
 
     SceneObject *sceneObject = NULL;
     std::string filePath = "models/sponza.obj";
@@ -144,6 +159,16 @@ int main(int argc, char** argv) {
     }
 
     /////////////////////////////   COOKING   //////////////////////////////////
+    // test cooking area
+    GLuint tex_2d = SOIL_load_OGL_texture
+            (
+            "models/BatteredRobot.png",
+            SOIL_LOAD_AUTO,
+            SOIL_CREATE_NEW_ID,
+            SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT
+            );
+    // end of test cooking area
+
 
     glGenTextures(1, &depthTexture);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
@@ -179,6 +204,22 @@ int main(int argc, char** argv) {
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    glUseProgram((*sm)["quad"]->GetID());
+    GLuint quadBufferID;
+    const GLfloat quadVertices[] = {
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+    };    
+    glEnableVertexAttribArray(0);
+    glGenBuffers(2, &quadBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof (quadVertices), quadVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof (quadVertices[0]), (GLvoid*) 0);
+    glUseProgram(0);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -204,6 +245,7 @@ int main(int argc, char** argv) {
     float ambientLightIntensity = 0.2;
 
     GLuint programID = (*sm)["phong"]->GetID();
+    GLuint quadProgramID = (*sm)["quad"]->GetID();
     float deltaTime = 0.0f;
     float startTime = glfwGetTime();
     float buffTime = 0.0;
@@ -211,12 +253,13 @@ int main(int argc, char** argv) {
     float animationTime = 0.0f;
     while (!glfwWindowShouldClose(window)) {
         processInput(deltaTime);
-        
+
         //********************* DRAWING SCENE TO THE FBO ***********************
         glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-        
+
         glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        projectionMatrix = glm::perspective(60.0f, (float) windowWidth / windowHeight, 1.0f, 10000.0f);
 
         glm::vec3 lightPosition = glm::vec3(360 * sin(animationTime), 40, 0);
         //glm::vec3 lightPosition = glm::vec3(0, 40, 40);
@@ -252,22 +295,38 @@ int main(int argc, char** argv) {
         glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
         vehicleObject->render(programID);
         glUseProgram(0);
-        
+
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         //******************** END OF THE DRAWING SCENE ************************
-        
+
         //******************** STARTING OF POST PROCESSING *********************
-        glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        ///glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+        //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
+        //glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        //glDisable(GL_DEPTH_TEST);
         // use screen space quad shader here
         // BIG TODO!!!!!
         // 
-        glDisable(GL_DEPTH_TEST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
         //******************** END OF THE POST PROCESSING **********************
-        
-        
+        glEnable(GL_DEPTH_TEST);
+
+        // TO PRESENT PROCESSED FRAME TO THE SCREEN
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, windowWidth, windowHeight);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        glUseProgram(quadProgramID);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
+        glUniform1i(glGetUniformLocation(quadProgramID, "canvasTexture"), 0);
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        glDrawArrays(GL_TRIANGLES, 0, 6); 
+        glDisableVertexAttribArray(0);
+        glUseProgram(0);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
         double lastTime = glfwGetTime();
@@ -283,11 +342,13 @@ int main(int argc, char** argv) {
         animationTime += deltaTime;
     }
 
-    
+    glDeleteTextures(1, &tex_2d);
+
     glDeleteTextures(2, colourTexture);
     glDeleteTextures(1, &depthTexture);
     glDeleteFramebuffers(1, &bufferFBO);
     glDeleteFramebuffers(1, &processFBO);
+    glDeleteBuffers(1, &quadBufferID);
     delete sceneObject;
     delete vehicleObject;
     delete ShaderManager::getSingleton();

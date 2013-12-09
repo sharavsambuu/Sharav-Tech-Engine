@@ -27,7 +27,9 @@ in vec3 vNormal;   // view-space
 in vec3 vEyeDir;   // view-space
 in vec3 vLightDir; // view-space
 in vec3 vLightPosition;
-out vec4 out_color;
+
+layout(location = 0) out vec3 out_color;
+
 
 void main(void)
 {
