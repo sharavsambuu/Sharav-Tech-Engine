@@ -301,6 +301,7 @@ int main(int argc, char** argv) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         //******************** END OF THE DRAWING SCENE ************************
 
+        for (int i=0; i<10; i++) {
         //******************** STARTING OF POST PROCESSING *********************
         // PING PONGING between attachments
         glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
@@ -312,6 +313,8 @@ int main(int argc, char** argv) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
         glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
+        glUniform1i(glGetUniformLocation(gausProgramID, "isVertical"), 1);
+        glUniform2f(glGetUniformLocation(gausProgramID, "pixelSize") , 1.0f/windowWidth, 1.0f/windowHeight);
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -323,6 +326,8 @@ int main(int argc, char** argv) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, colourTexture[1]);
         glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
+        glUniform1i(glGetUniformLocation(gausProgramID, "isVertical"), 0);
+        glUniform2f(glGetUniformLocation(gausProgramID, "pixelSize") , 1.0f/windowWidth, 1.0f/windowHeight);
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -331,6 +336,7 @@ int main(int argc, char** argv) {
         glUseProgram(0);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         //******************** END OF THE POST PROCESSING **********************
+        }
         glEnable(GL_DEPTH_TEST);
 
         // TO PRESENT PROCESSED FRAME TO THE SCREEN
@@ -557,7 +563,7 @@ void initWindow() {
         return;
     }
 
-    window = glfwCreateWindow(windowWidth, windowHeight, "SHARAV TECH ENGINE", NULL, NULL);
+    window = glfwCreateWindow(windowWidth, windowHeight, "STE", NULL, NULL);
     if (!window) {
         std::cout << "Error: Failed to create window.\n";
         glfwTerminate();
