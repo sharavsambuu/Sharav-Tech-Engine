@@ -55,9 +55,11 @@ glm::mat4 modelMatrix;
 glm::mat4 viewMatrix;
 glm::mat4 projectionMatrix;
 
-
-GLuint simpleFBO; // frame buffer object
-
+// frame buffer object stuff
+GLuint bufferFBO;
+GLuint processFBO;
+GLuint colourTexture[2];
+GLuint depthTexture;
 
 void initWindow();
 void disposeWindow();
@@ -85,16 +87,6 @@ int main(int argc, char** argv) {
     sm->AttachShaderToProgram("phong", "phongFragment");
     sm->LinkProgramObject("phong");
     std::cout << "ShaderProgram ID is " << (*sm)["phong"]->GetID() << std::endl;
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CCW);
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_ALPHA_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     SceneObject *sceneObject = NULL;
     std::string filePath = "models/sponza.obj";
@@ -125,8 +117,8 @@ int main(int argc, char** argv) {
 
     SceneObject *vehicleObject = NULL;
     //filePath = "models/phoenix_ugv.md2";
+    //filePath = "models/jeepwrangler.obj";
     filePath = "models/R8.obj";
-    //filePath = "models/mech.obj";
     scene = importer.ReadFile(
             filePath.c_str(),
             aiProcess_OptimizeGraph |
@@ -151,27 +143,55 @@ int main(int argc, char** argv) {
         processMesh(scene->mMeshes[i], vehicleObject);
     }
 
-/*
-    glGenFramebuffers(1, &simpleFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, simpleFBO);
+    /////////////////////////////   COOKING   //////////////////////////////////
 
-    GLuint colorAttachmentTexture;
-    glGenTextures(1, &colorAttachmentTexture);
-    glBindTexture(GL_TEXTURE_2D, colorAttachmentTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glGenTextures(1, &depthTexture);
+    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, windowWidth, windowHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 
-    GLuint depthAttachmentRenderBuffer;
-    glGenRenderbuffers(1, &depthAttachmentRenderBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, depthAttachmentRenderBuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthAttachmentRenderBuffer);
+    for (int i = 0; i < 2; i++) {
+        glGenTextures(1, &colourTexture[i]);
+        glBindTexture(GL_TEXTURE_2D, colourTexture[i]);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    }
 
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorAttachmentTexture, 0);
-    GLenum drawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, drawBuffers);
-*/
+    glGenFramebuffers(1, &bufferFBO);
+    glGenFramebuffers(1, &processFBO);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[0], 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "cannot create a framebuffer object" << std::endl;
+        exit(-1);
+    } else {
+        std::cout << "it seems like FBO is created and it's good to go" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_ALPHA_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    ////////////////////////////////////////////////////////////////////////////
+
 
     projectionMatrix = glm::mat4(1.0f);
     viewMatrix = glm::mat4(1.0f);
@@ -191,8 +211,12 @@ int main(int argc, char** argv) {
     float animationTime = 0.0f;
     while (!glfwWindowShouldClose(window)) {
         processInput(deltaTime);
+        
+        //********************* DRAWING SCENE TO THE FBO ***********************
+        glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+        
         glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         glm::vec3 lightPosition = glm::vec3(360 * sin(animationTime), 40, 0);
         //glm::vec3 lightPosition = glm::vec3(0, 40, 40);
@@ -228,7 +252,22 @@ int main(int argc, char** argv) {
         glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
         vehicleObject->render(programID);
         glUseProgram(0);
-
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        //******************** END OF THE DRAWING SCENE ************************
+        
+        //******************** STARTING OF POST PROCESSING *********************
+        glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        // use screen space quad shader here
+        // BIG TODO!!!!!
+        // 
+        glDisable(GL_DEPTH_TEST);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        //******************** END OF THE POST PROCESSING **********************
+        
+        
         glfwSwapBuffers(window);
         glfwPollEvents();
         double lastTime = glfwGetTime();
@@ -244,6 +283,11 @@ int main(int argc, char** argv) {
         animationTime += deltaTime;
     }
 
+    
+    glDeleteTextures(2, colourTexture);
+    glDeleteTextures(1, &depthTexture);
+    glDeleteFramebuffers(1, &bufferFBO);
+    glDeleteFramebuffers(1, &processFBO);
     delete sceneObject;
     delete vehicleObject;
     delete ShaderManager::getSingleton();
