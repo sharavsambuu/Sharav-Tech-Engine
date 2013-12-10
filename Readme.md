@@ -18,4 +18,4 @@ lib linking flags
 
 ![alt tag](http://2.bp.blogspot.com/-7rERDEBI7t8/UqRflZhDDCI/AAAAAAAAC34/vL0Gz37jiRE/s1600/fixed-material-manager-objects.jpg)
 
-![alt tag](http://3.bp.blogspot.com/-Z9Tu5_NCDkE/UqX-7C4HSeI/AAAAAAAAC4E/UwiCcc72TYA/s1600/Gaussian-blur-STE-10-iteration.jpg)
+![alt tag](http://2.bp.blogspot.com/-vhVXksW-vYc/UqcmCN3p7kI/AAAAAAAAC4g/sIZ7G8wdkHs/s1600/DOF-5-iteration.jpg)
