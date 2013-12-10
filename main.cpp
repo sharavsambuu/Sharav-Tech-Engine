@@ -42,7 +42,7 @@ bool sKeyPressed;
 bool aKeyPressed;
 bool dKeyPressed;
 
-bool doGaus = true;
+bool doGaus = false;
 bool doDOF = true;
 
 
@@ -119,6 +119,17 @@ int main(int argc, char** argv) {
     sm->LinkProgramObject("gaus");
     std::cout << "Gaus ID is " << (*sm)["gaus"]->GetID() << std::endl;
 
+    sm->CreateShaderProgram("dof");
+    sm->AttachShader("dofVertex", VERTEX);
+    sm->AttachShader("dofFragment", FRAGMENT);
+    sm->LoadShaderSource("dofVertex", "shaders/dof.vert.glsl");
+    sm->LoadShaderSource("dofFragment", "shaders/dof.frag.glsl");
+    sm->CompileShader("dofVertex");
+    sm->CompileShader("dofFragment");
+    sm->AttachShaderToProgram("dof", "dofVertex");
+    sm->AttachShaderToProgram("dof", "dofFragment");
+    sm->LinkProgramObject("dof");
+    std::cout << "DOF ID is " << (*sm)["dof"]->GetID() << std::endl;
 
     SceneObject *sceneObject = new SceneObject();
     std::string filePath = "models/sponza.obj";
@@ -252,6 +263,7 @@ int main(int argc, char** argv) {
     GLuint programID = (*sm)["phong"]->GetID();
     GLuint quadProgramID = (*sm)["quad"]->GetID();
     GLuint gausProgramID = (*sm)["gaus"]->GetID();
+    GLuint dofProgramID = (*sm)["dof"]->GetID();
 
     float deltaTime = 0.0f;
     float startTime = glfwGetTime();
@@ -334,6 +346,53 @@ int main(int argc, char** argv) {
                 glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
                 glUniform1i(glGetUniformLocation(gausProgramID, "isVertical"), 0);
                 glUniform2f(glGetUniformLocation(gausProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+                glEnableVertexAttribArray(0);
+                glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                glDisableVertexAttribArray(0);
+                glUseProgram(0);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
+        }
+        if (doDOF == true) {
+            glm::mat4 projectionInverseMatrix = glm::inverse(projectionMatrix);
+            for (int i = 0; i < 5; i++) {
+                glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
+                glViewport(0, 0, windowWidth, windowHeight);
+                glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+                glDisable(GL_DEPTH_TEST);
+                glUseProgram(dofProgramID);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
+                glUniform1i(glGetUniformLocation(dofProgramID, "uScreenTex"), 0);
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, depthTexture);
+                glUniform1i(glGetUniformLocation(dofProgramID, "uDepthTex"), 1);
+                glUniform1i(glGetUniformLocation(dofProgramID, "isVertical"), 1);
+                glUniform2f(glGetUniformLocation(dofProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+                glUniform1f(glGetUniformLocation(dofProgramID, "focus"), 360.0f * sin(animationTime));
+                glUniformMatrix4fv(glGetUniformLocation(dofProgramID, "projectionInverseMatrix"), 1, GL_FALSE, glm::value_ptr(projectionInverseMatrix));
+                glEnableVertexAttribArray(0);
+                glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                glDisableVertexAttribArray(0);
+                glUseProgram(0);
+
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[0], 0);
+                glUseProgram(dofProgramID);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, colourTexture[1]);
+                glUniform1i(glGetUniformLocation(dofProgramID, "uScreenTex"), 0);
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, depthTexture);
+                glUniform1i(glGetUniformLocation(dofProgramID, "uDepthTex"), 1);
+                glUniform1i(glGetUniformLocation(dofProgramID, "isVertical"), 0);
+                glUniform2f(glGetUniformLocation(dofProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+                glUniform1f(glGetUniformLocation(dofProgramID, "focus"), 360.0f * sin(animationTime));
+                glUniformMatrix4fv(glGetUniformLocation(dofProgramID, "projectionInverseMatrix"), 1, GL_FALSE, glm::value_ptr(projectionInverseMatrix));
                 glEnableVertexAttribArray(0);
                 glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
