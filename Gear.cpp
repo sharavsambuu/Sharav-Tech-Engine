@@ -1,5 +1,6 @@
 #include "Gear.hpp"
 #include "GLFWApp.hpp"
+#include <iostream>
 
 Gear* Gear::instance = NULL;
 
@@ -10,6 +11,7 @@ Gear* Gear::getSingleton() {
 }
 
 Gear::Gear() {
+    std::cout << "<<<<< Starting GEAR system " << std::endl;
     GLFWApp::getSingleton();
     currentState = NULL;
     isRunning = true;
@@ -21,15 +23,17 @@ Gear::~Gear() {
     }
     states.clear();
     delete GLFWApp::getSingleton();
+    std::cout << "<<<<< ending GEAR system " << std::endl;
 }
 
 bool Gear::keepRunning() {
-    return GLFWApp::getSingleton()->keepRunning();
+    return GLFWApp::getSingleton()->keepRunning() && isRunning;
 }
 
 void Gear::update() {
-    if (currentState)
-        currentState->update();
+    if (currentState) {
+        currentState->update(GLFWApp::getSingleton()->getDeltaTime());
+    }
 }
 
 void Gear::render() {
@@ -40,17 +44,19 @@ void Gear::render() {
 
 void Gear::input() {
     GLFWApp::getSingleton()->handleInput();
+    if (currentState)
+        currentState->input();
 }
 
 void Gear::addState(const std::string& name, AbstractState* state) {
     std::map<std::string, AbstractState*>::iterator it = states.find(name);
-    if (it==states.end())
+    if (it == states.end())
         states[name] = state;
 }
 
 void Gear::changeState(const std::string& name) {
     std::map<std::string, AbstractState*>::iterator it = states.find(name);
-    if (it!=states.end()) {
+    if (it != states.end()) {
         if (currentState)
             currentState->pause();
         currentState = states[name];

@@ -11,6 +11,7 @@ GLFWApp* GLFWApp::getSingleton() {
 }
 
 GLFWApp::GLFWApp() {
+    std::cout << "<<<<< Starting GLFW system " << std::endl;
     this->windowWidth = (int) SCREEN_WIDTH;
     this->windowHeight = (int) SCREEN_HEIGHT;
     this->framesPerSecond = 0;
@@ -45,11 +46,14 @@ GLFWApp::GLFWApp() {
 GLFWApp::~GLFWApp() {
     glfwDestroyWindow(window);
     glfwTerminate();
+    std::cout << "<<<<< Ending GLFW system " << std::endl;
 }
 
 void GLFWApp::handleInput() {
-    isRunning = !glfwWindowShouldClose(window) || 
-            getKeyPress(GLFW_KEY_ESCAPE);
+    glfwPollEvents();
+    if (glfwWindowShouldClose(window) || getKeyPress(GLFW_KEY_ESCAPE)) {
+        isRunning = false;
+    }
     if (isPinMouse) {
         double mouseX, mouseY;
         glfwGetCursorPos(window, &mouseX, &mouseY);
@@ -61,7 +65,7 @@ void GLFWApp::handleInput() {
 
 void GLFWApp::updateVideo() {
     glfwSwapBuffers(window);
-    glfwPollEvents();
+    
     float lastTime = glfwGetTime();
     deltaTime = lastTime - startTime;
     startTime = lastTime;
@@ -95,11 +99,11 @@ void GLFWApp::setCursorVisible(bool b) {
 }
 
 bool GLFWApp::getKeyPress(int key) {
-    return glfwGetKey(window, key)==GLFW_PRESS;
+    return glfwGetKey(window, key) == GLFW_PRESS;
 }
 
 bool GLFWApp::getKeyRelease(int key) {
-    return glfwGetKey(window, key)==GLFW_RELEASE;
+    return glfwGetKey(window, key) == GLFW_RELEASE;
 }
 
 void GLFWApp::setPinMouse(bool b) {

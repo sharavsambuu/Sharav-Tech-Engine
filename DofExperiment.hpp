@@ -10,20 +10,30 @@
 
 #include "AbstractState.hpp"
 
-class DofExperiment : public AbstractState{
+class DofExperiment : public AbstractState {
 public:
     DofExperiment();
     ~DofExperiment();
-    
+
     void pause();
     void resume();
 
     void input();
-    void update();
+    void update(float deltaTime);
     void render();
-    
+
     void initialize();
 private:
+    bool isEntered;
+    bool isFirstTime;
+    float enteredTime;
+
+    // logic
+    bool wKeyPressed;
+    bool sKeyPressed;
+    bool aKeyPressed;
+    bool dKeyPressed;
+
 };
 
 #endif	/* DOFEXPERIMENT_HPP */
