@@ -357,7 +357,7 @@ int main(int argc, char** argv) {
         }
         if (doDOF == true) {
             glm::mat4 projectionInverseMatrix = glm::inverse(projectionMatrix);
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 1; i++) {
                 glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
                 glViewport(0, 0, windowWidth, windowHeight);

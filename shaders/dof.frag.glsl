@@ -51,7 +51,6 @@ void main(void)
             vec3 temp = texture2D(uScreenTex, vCoord + values[i]).xyz;  
             out_color += temp * weights[i];
         }
-
     } else {
         out_color = texture2D(uScreenTex, vCoord);
     }    

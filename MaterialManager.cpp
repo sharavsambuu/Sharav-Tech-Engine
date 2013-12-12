@@ -5,13 +5,10 @@ MaterialManager::MaterialManager() {
 }
 
 MaterialManager::~MaterialManager() {
-    std::map<int, Material *>::iterator begin = this->materials.begin();
-    std::map<int, Material *>::iterator end = this->materials.end();
-    while (begin != end) {
-        delete begin->second;
-        ++begin;
+    for (auto& material : materials) {
+        delete material.second;
     }
-    this->materials.clear();
+    materials.clear();    
     std::cout << "MaterialManager destructor function" << std::endl;
 }
 
