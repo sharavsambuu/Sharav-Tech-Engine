@@ -17,6 +17,7 @@
 #include <GL/glew.h>
 #include "Camera.hpp"
 #include "ShaderManager.hpp"
+#include "SceneObject.hpp"
 
 class DofExperiment : public AbstractState {
 public:
@@ -36,6 +37,9 @@ private:
     bool isFirstTime;
     float enteredTime;
 
+    int windowWidth;
+    int windowHeight;
+    
     // logic
     bool wKeyPressed;
     bool sKeyPressed;
@@ -48,6 +52,9 @@ private:
     glm::mat4 modelMatrix;
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
+    
+    glm::mat4 mvpMatrix;
+    glm::mat3 normalMatrix;
 
     GLuint bufferFBO;
     GLuint processFBO;
@@ -56,6 +63,20 @@ private:
 
     Camera* camera;
     ShaderManager* sm;
+    
+    GLuint programID;
+    GLuint quadProgramID;
+    GLuint gausProgramID;
+    GLuint dofProgramID;
+    GLuint quadBufferID;
+    
+    SceneObject *sponzaObject;
+    SceneObject *vehicleObject;
+    
+    float animationTime;
+    float rotationAngle;
+    float ambientLightIntensity;
+    glm::vec3 lightPosition;
 };
 
 #endif	/* DOFEXPERIMENT_HPP */

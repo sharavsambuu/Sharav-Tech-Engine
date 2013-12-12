@@ -2,6 +2,9 @@
 #include "GLFWApp.hpp"
 #include "Camera.hpp"
 #include <iostream>
+#include "ModelLoader.hpp"
+#include "Common.hpp"
+#include "Gear.hpp"
 
 DofExperiment::DofExperiment() {
     isEntered = true;
@@ -12,6 +15,13 @@ DofExperiment::~DofExperiment() {
     std::cout << "<<<<< Dof experiment destruction function " << std::endl;
     if (sm != NULL)
         delete sm;
+    delete sponzaObject;
+    delete vehicleObject;
+    glDeleteFramebuffers(1, &bufferFBO);
+    glDeleteFramebuffers(1, &processFBO);
+    glDeleteTextures(2, colourTexture);
+    glDeleteTextures(1, &depthTexture);
+    glDeleteBuffers(1, &quadBufferID);
 }
 
 void DofExperiment::pause() {
@@ -63,9 +73,157 @@ void DofExperiment::update(float deltaTime) {
     if (dKeyPressed)
         std::cout << "moving right" << std::endl;
     camera->update(deltaTime);
+    viewMatrix = camera->getViewMatrix();
+    projectionMatrix = camera->getProjectionMatrix();
+    
+    rotationAngle += 5 * deltaTime;
+    lightPosition = glm::vec3(360 * sin(animationTime), 40, 0);
 }
 
 void DofExperiment::render() {
+    //********************* DRAWING SCENE TO THE FBO ***********************
+    glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+
+    glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    projectionMatrix = glm::perspective(60.0f, (float) windowWidth / windowHeight, 1.0f, 10000.0f);
+
+    glUseProgram(programID);
+    glm::mat4 modelMatrix = sponzaObject->getModelMatrix();
+    mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+    normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(programID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(programID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+    glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    glUniform3f(glGetUniformLocation(programID, "lightPosition"), lightPosition.x, lightPosition.y, lightPosition.z);
+    glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
+    sponzaObject->render(programID);
+    glUseProgram(0);
+
+    glUseProgram(programID);
+    
+    
+    modelMatrix = vehicleObject->getModelMatrix();
+    modelMatrix = glm::scale(modelMatrix, glm::vec3(10, 10, 10));
+    modelMatrix = glm::rotate(modelMatrix, rotationAngle, glm::vec3(0, 1, 0));
+    mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+    normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(programID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(programID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+    glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    glUniform3f(glGetUniformLocation(programID, "lightPosition"), lightPosition.x, lightPosition.y, lightPosition.z);
+    glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
+    vehicleObject->render(programID);
+    glUseProgram(0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //******************** END OF THE DRAWING SCENE ************************
+
+    //******************** STARTING OF POST PROCESSING *********************
+    if (doGaus == true) {
+        for (int i = 0; i < 10; i++) {
+            // PING PONGING between attachments
+            glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
+            glViewport(0, 0, windowWidth, windowHeight);
+            glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+            glDisable(GL_DEPTH_TEST);
+            glUseProgram(gausProgramID);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
+            glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
+            glUniform1i(glGetUniformLocation(gausProgramID, "isVertical"), 1);
+            glUniform2f(glGetUniformLocation(gausProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+            glEnableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glDisableVertexAttribArray(0);
+            glUseProgram(0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[0], 0);
+            glUseProgram(gausProgramID);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, colourTexture[1]);
+            glUniform1i(glGetUniformLocation(gausProgramID, "uScreenTex"), 0);
+            glUniform1i(glGetUniformLocation(gausProgramID, "isVertical"), 0);
+            glUniform2f(glGetUniformLocation(gausProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+            glEnableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glDisableVertexAttribArray(0);
+            glUseProgram(0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+    }
+    if (doDOF == true) {
+        glm::mat4 projectionInverseMatrix = glm::inverse(projectionMatrix);
+        for (int i = 0; i < 1; i++) {
+            glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
+            glViewport(0, 0, windowWidth, windowHeight);
+            glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+            glDisable(GL_DEPTH_TEST);
+            glUseProgram(dofProgramID);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
+            glUniform1i(glGetUniformLocation(dofProgramID, "uScreenTex"), 0);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, depthTexture);
+            glUniform1i(glGetUniformLocation(dofProgramID, "uDepthTex"), 1);
+            glUniform1i(glGetUniformLocation(dofProgramID, "isVertical"), 1);
+            glUniform2f(glGetUniformLocation(dofProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+            glUniform1f(glGetUniformLocation(dofProgramID, "focus"), 360.0f * sin(animationTime));
+            glUniformMatrix4fv(glGetUniformLocation(dofProgramID, "projectionInverseMatrix"), 1, GL_FALSE, glm::value_ptr(projectionInverseMatrix));
+            glEnableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glDisableVertexAttribArray(0);
+            glUseProgram(0);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[0], 0);
+            glUseProgram(dofProgramID);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, colourTexture[1]);
+            glUniform1i(glGetUniformLocation(dofProgramID, "uScreenTex"), 0);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, depthTexture);
+            glUniform1i(glGetUniformLocation(dofProgramID, "uDepthTex"), 1);
+            glUniform1i(glGetUniformLocation(dofProgramID, "isVertical"), 0);
+            glUniform2f(glGetUniformLocation(dofProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+            glUniform1f(glGetUniformLocation(dofProgramID, "focus"), 360.0f * sin(animationTime));
+            glUniformMatrix4fv(glGetUniformLocation(dofProgramID, "projectionInverseMatrix"), 1, GL_FALSE, glm::value_ptr(projectionInverseMatrix));
+            glEnableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glDisableVertexAttribArray(0);
+            glUseProgram(0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+    }
+    //******************** END OF THE POST PROCESSING **********************
+
+    glEnable(GL_DEPTH_TEST);
+
+    // TO PRESENT PROCESSED FRAME TO THE SCREEN
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, windowWidth, windowHeight);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glUseProgram(quadProgramID);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, colourTexture[0]);
+    //glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glUniform1i(glGetUniformLocation(quadProgramID, "uScreenTex"), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDisableVertexAttribArray(0);
+    glUseProgram(0);
 }
 
 void DofExperiment::initialize() {
@@ -79,7 +237,7 @@ void DofExperiment::initialize() {
     doDOF = true;
     camera = new Camera();
 
-    // SHADERS
+    // loading shaders
     sm = ShaderManager::getSingleton();
 
     sm->CreateShaderProgram("phong");
@@ -129,5 +287,86 @@ void DofExperiment::initialize() {
     sm->AttachShaderToProgram("dof", "dofFragment");
     sm->LinkProgramObject("dof");
     std::cout << "DOF ID is " << (*sm)["dof"]->GetID() << std::endl;
+
+    // loading models
+    sponzaObject = loadSceneModel("models/sponza.obj");
+    vehicleObject = loadSceneModel("models/R8.obj");
+
+    // let cook!!!
+    windowWidth = GLFWApp::getSingleton()->getWindowWidth();
+    windowHeight = GLFWApp::getSingleton()->getWindowHeight();
+    glGenTextures(1, &depthTexture);
+    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, windowWidth, windowHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+
+    for (int i = 0; i < 2; i++) {
+        glGenTextures(1, &colourTexture[i]);
+        glBindTexture(GL_TEXTURE_2D, colourTexture[i]);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    }
+
+    glGenFramebuffers(1, &bufferFBO);
+    glGenFramebuffers(1, &processFBO);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[0], 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "cannot create a framebuffer object" << std::endl;
+        Gear::getSingleton()->exit();
+    } else {
+        std::cout << "it seems like FBO is created and it's good to go" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // screen aligned quads
+    const GLfloat quadVertices[] = {
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+    };
+    glGenBuffers(2, &quadBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof (quadVertices), quadVertices, GL_STATIC_DRAW);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_ALPHA_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    projectionMatrix = glm::mat4(1.0f);
+    viewMatrix = glm::mat4(1.0f);
+    viewMatrix = glm::translate(viewMatrix, glm::vec3(0, 0, -2));
+    glViewport(0, 0, (int) windowWidth, (int) windowHeight);
+    projectionMatrix = glm::perspective(60.0f, (float) windowWidth / windowHeight, 1.0f, 10000.0f);
+
+    ambientLightIntensity = 0.2;
+
+    programID = (*sm)["phong"]->GetID();
+    quadProgramID = (*sm)["quad"]->GetID();
+    gausProgramID = (*sm)["gaus"]->GetID();
+    dofProgramID = (*sm)["dof"]->GetID();
+
+    animationTime = 0.0f;
+    rotationAngle = 0.0f;
 
 }

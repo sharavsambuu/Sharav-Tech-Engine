@@ -17,6 +17,7 @@
 
 void processMaterial(aiMaterial* material, int index, SceneObject *object);
 void processMesh(aiMesh* mesh, SceneObject *object);
+SceneObject* loadSceneModel(const std::string& filePath);
 
 #endif	/* MODELLOADER_HPP */
 

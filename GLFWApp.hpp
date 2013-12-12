@@ -32,6 +32,9 @@ public:
     void setPinMouse(bool b);
     float getDeltaMouseX();
     float getDeltaMouseY();
+    
+    int getWindowWidth() { return this->windowWidth; }
+    int getWindowHeight() { return this->windowHeight; }
 private:
     bool isRunning;
     double startTime;

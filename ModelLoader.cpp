@@ -1,4 +1,33 @@
 #include "ModelLoader.hpp"
+#include "Gear.hpp"
+
+SceneObject* loadSceneModel(const std::string& filePath) {
+    SceneObject *sceneObject = new SceneObject();
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(
+            filePath.c_str(),
+            aiProcess_OptimizeGraph |
+            aiProcess_OptimizeMeshes |
+            aiProcess_ImproveCacheLocality |
+            aiProcess_SplitLargeMeshes |
+            aiProcess_Triangulate |
+            aiProcess_GenSmoothNormals |
+            aiProcess_CalcTangentSpace |
+            aiProcess_JoinIdenticalVertices |
+            aiProcess_SortByPType
+            );
+    if (!scene) {
+        std::cout << "error in loading file : " << importer.GetErrorString() << std::endl;
+        Gear::getSingleton()->exit();
+    }
+    for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
+        processMaterial(scene->mMaterials[i], i, sceneObject);
+    }
+    for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
+        processMesh(scene->mMeshes[i], sceneObject);
+    }
+    return sceneObject;
+}
 
 void processMesh(aiMesh* mesh, SceneObject *object) {
     float *normals, *textureCoordinates, *tangents, *bitangents;
