@@ -110,11 +110,11 @@ void GLFWApp::setPinMouse(bool b) {
     this->isPinMouse = b;
 }
 
-int GLFWApp::getDeltaMouseX() {
+float GLFWApp::getDeltaMouseX() {
     return this->deltaMouseX;
 }
 
-int GLFWApp::getDeltaMouseY() {
+float GLFWApp::getDeltaMouseY() {
     return this->deltaMouseY;
 }
 

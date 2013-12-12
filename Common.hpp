@@ -8,8 +8,8 @@
 #ifndef COMMON_HPP
 #define	COMMON_HPP
 
-#define SCREEN_WIDTH 1000.0f
-#define SCREEN_HEIGHT 800.0f
+#define SCREEN_WIDTH 600.0f
+#define SCREEN_HEIGHT 400.0f
 
 
 #endif	/* COMMON_HPP */

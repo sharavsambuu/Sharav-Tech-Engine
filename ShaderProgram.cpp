@@ -1,16 +1,17 @@
 #include "ShaderProgram.hpp"
 #include "stdlib.h"
+#include "Gear.hpp"
 
 ShaderProgram::ShaderProgram(std::string name) {
     programID = glCreateProgram();
-    std::cerr << "created program ID is " << programID << "\n";
+    std::cout << "<<<<< shader program construction, shader ID : " << programID << std::endl;
     this->programName = name;
     isLinked = false;
     isActive = false;
 }
 
 ShaderProgram::~ShaderProgram() {
-    std::cerr << "deleting shader program " << programName << "\n";
+    std::cout << "<<<<< shader program destruction function : " << programName << std::endl;
     glDeleteProgram(programID);
 }
 
@@ -52,7 +53,8 @@ void ShaderProgram::Link() {
         glGetProgramiv(programID, GL_LINK_STATUS, &infologLength);
         if (infologLength == GL_FALSE) {
             std::cerr << "program linking failed and exiting\n";
-            exit(EXIT_FAILURE);
+            Gear::getSingleton()->exit();
+            //exit(EXIT_FAILURE);
         }
     }
     isLinked = true;

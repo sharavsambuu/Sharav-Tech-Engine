@@ -1,6 +1,7 @@
 #include "Shader.hpp"
 #include <fstream>
 #include "stdlib.h"
+#include "Gear.hpp"
 
 void printInfo(const GLuint &obj) {
     GLint infologLength = 0;
@@ -57,7 +58,7 @@ Shader::Shader(std::string name, SHADERTYPE type) {
 }
 
 Shader::~Shader() {
-    std::cerr << "deleting shader " << name << "\n";
+    std::cout << "<<<<< deleting shader : " << name << std::endl;
     delete source;
     glDeleteShader(shaderID);
 }
@@ -79,7 +80,8 @@ void Shader::Load(std::string name) {
     std::ifstream shaderSource(name.c_str());
     if (!shaderSource.is_open()) {
         std::cerr << "file not found " << name.c_str() << "\n";
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        Gear::getSingleton()->exit();
     }
     source = new std::string(
             std::istreambuf_iterator<char>(shaderSource),

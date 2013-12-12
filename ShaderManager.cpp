@@ -12,23 +12,20 @@ ShaderManager* ShaderManager::getSingleton() {
 }
 
 ShaderManager::ShaderManager() {
+    std::cout << "<<<<< shader manager construction function " << std::endl;
 }
 
 ShaderManager::~ShaderManager() {
-    std::cerr << "shader manager desctruction function\n";
-    std::map<std::string, ShaderProgram *>::iterator pbegin = shaderPrograms.begin();
-    std::map<std::string, ShaderProgram *>::iterator pend = shaderPrograms.end();
-    while (pbegin != pend) {
-        delete pbegin->second;
-        ++pbegin;
+    std::cout << "<<<<< shader manager desctruction function " << std::endl;
+    for (auto& program : shaderPrograms) {
+        delete program.second;
     }
-    std::map<std::string, Shader *>::iterator sbegin = shaders.begin();
-    std::map<std::string, Shader *>::iterator send = shaders.end();
+    shaderPrograms.clear();
 
-    while (sbegin != send) {
-        delete sbegin->second;
-        ++sbegin;
+    for (auto& shader : shaders) {
+        delete shader.second;
     }
+    shaders.clear();
 }
 
 void ShaderManager::AttachShader(std::string name, SHADERTYPE type) {

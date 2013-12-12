@@ -30,8 +30,8 @@ public:
 
     void setCursorVisible(bool b);
     void setPinMouse(bool b);
-    int getDeltaMouseX();
-    int getDeltaMouseY();
+    float getDeltaMouseX();
+    float getDeltaMouseY();
 private:
     bool isRunning;
     double startTime;
