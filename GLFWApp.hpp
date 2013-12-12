@@ -23,6 +23,9 @@ public:
     void updateVideo();
     bool keepRunning();
 
+    bool getKeyPress(int key);
+    bool getKeyRelease(int key);
+    
     float getDeltaTime();
     int getFPS();
 
@@ -40,10 +43,8 @@ private:
     bool isPinMouse;
     int windowWidth;
     int windowHeight;
-    int midWidth;
-    int midHeight;
-    int deltaMouseX;
-    int deltaMouseY;
+    float deltaMouseX;
+    float deltaMouseY;
     GLFWwindow *window;
 
     static GLFWApp* instance;

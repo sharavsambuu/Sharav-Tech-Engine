@@ -145,7 +145,7 @@ void SceneObject::addMesh(
     if (numBitangents > 0) {
         glGenBuffers(1, &m.bitangentID);
         glBindBuffer(GL_ARRAY_BUFFER, m.bitangentID);
-        glBufferData(GL_ARRAY_BUFFER, numBitangents * 3 * sizeof(GLfloat), bitangents, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, numBitangents * 3 * sizeof (GLfloat), bitangents, GL_STATIC_DRAW);
         glEnableVertexAttribArray(bitangentAttrib);
         glVertexAttribPointer(bitangentAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

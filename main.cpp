@@ -13,8 +13,6 @@
 #include <assimp/postprocess.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#define GLM_MESSAGES
-#define GLM_FORCE_INLINE 
 #define GLM_FORCE_PURE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

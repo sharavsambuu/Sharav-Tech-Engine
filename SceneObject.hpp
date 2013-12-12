@@ -13,6 +13,9 @@
 #include <string>
 #include <vector>
 #include "MaterialManager.hpp"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 typedef struct {
     GLuint vertexID;
@@ -54,7 +57,7 @@ public:
     glm::vec3 getBoundingBoxMax();
 
     glm::mat4 getModelMatrix();
-    
+
     MaterialManager *mm;
 protected:
     std::vector<Mesh> meshes;

@@ -26,7 +26,6 @@ public:
     void changeState(const std::string& name);
     void exit();
 private:
-    //static Gear
     bool isRunning;
     AbstractState* currentState;
     std::map<std::string, AbstractState*> states;
