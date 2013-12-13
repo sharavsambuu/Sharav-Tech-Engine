@@ -76,7 +76,7 @@ private:
     GLuint dofProgramID;
     GLuint quadBufferID;
 
-    std::vector<SceneObject *> objects;
+    std::vector<SceneObject *> sceneObjects;
     
     float animationTime;
     float rotationAngle;

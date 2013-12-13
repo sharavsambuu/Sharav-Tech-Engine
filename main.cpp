@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     Gear *gear = Gear::getSingleton();
     DofExperiment *dofExp = new DofExperiment();
     gear->addState("dof", dofExp);
-    gear->changeState("dof");
+    gear->changeState("dof");    
 
     while (gear->keepRunning()) {
         gear->input();

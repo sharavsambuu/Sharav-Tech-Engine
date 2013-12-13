@@ -12,7 +12,7 @@ SceneObject::SceneObject() {
 }
 
 SceneObject::~SceneObject() {
-    std::cout << "desctructor function of the SceneObject" << std::endl;
+    std::cout << "<<<<< desctructor function of the SceneObject" << std::endl;
     for (std::vector<Mesh>::iterator it = this->meshes.begin(); it != this->meshes.end(); it++) {
         Mesh mesh = (*it);
         glDeleteBuffers(1, &mesh.vertexID);

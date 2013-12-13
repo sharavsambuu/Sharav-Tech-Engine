@@ -8,8 +8,8 @@ MaterialManager::~MaterialManager() {
     for (auto& material : materials) {
         delete material.second;
     }
-    materials.clear();    
-    std::cout << "MaterialManager destructor function" << std::endl;
+    materials.clear();
+    std::cout << "<<<<< MaterialManager destructor function" << std::endl;
 }
 
 Material* MaterialManager::createMaterial(const std::string& name, int index) {

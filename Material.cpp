@@ -4,21 +4,21 @@
 #include <iostream>
 
 Material::Material() {
-    this->diffuseColor  = glm::vec4(0.5, 0.5, 0.5, 1.0); // Medium-gray
-    this->ambientColor  = glm::vec3(0.5); // Medium-gray 
+    this->diffuseColor = glm::vec4(0.5, 0.5, 0.5, 1.0); // Medium-gray
+    this->ambientColor = glm::vec3(0.5); // Medium-gray 
     this->specularColor = glm::vec3(0.0); // No specular
     this->emissiveColor = glm::vec3(0.0); // No emission
     this->shininess = 0.5;
-    this->hasAmbientTexture  = false;
-    this->hasDiffuseTexture  = false;
-    this->hasNormalTexture   = false;
-    this->hasOpacityTexture  = false;
+    this->hasAmbientTexture = false;
+    this->hasDiffuseTexture = false;
+    this->hasNormalTexture = false;
+    this->hasOpacityTexture = false;
     this->hasSpecularTexture = false;
-    this->ambientTextureID  = 0;
-    this->diffuseTextureID  = 0;
-    this->normalTextureID   = 0;
+    this->ambientTextureID = 0;
+    this->diffuseTextureID = 0;
+    this->normalTextureID = 0;
     this->specularTextureID = 0;
-    this->opacityTextureID  = 0;
+    this->opacityTextureID = 0;
 }
 
 Material::~Material() {
@@ -27,7 +27,7 @@ Material::~Material() {
     glDeleteTextures(1, &this->specularTextureID);
     glDeleteTextures(1, &this->ambientTextureID);
     glDeleteTextures(1, &this->opacityTextureID);
-    std::cout << "Material destructor function" << std::endl;
+    std::cout << "<<<<< Material destructor function" << std::endl;
 }
 
 void Material::loadDiffuseTexture(const std::string& path) {

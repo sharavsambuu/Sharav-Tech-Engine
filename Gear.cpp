@@ -32,14 +32,14 @@ bool Gear::keepRunning() {
 
 void Gear::update() {
     if (currentState) {
-        if (currentState->isInitializationDone())
+        if (currentState->isInitializationDone()==true)
             currentState->update(GLFWApp::getSingleton()->getDeltaTime());
     }
 }
 
 void Gear::render() {
     if (currentState)
-        if (currentState->isInitializationDone())
+        if (currentState->isInitializationDone()==true)
             currentState->render();
     GLFWApp::getSingleton()->updateVideo();
 }
@@ -47,7 +47,7 @@ void Gear::render() {
 void Gear::input() {
     GLFWApp::getSingleton()->handleInput();
     if (currentState)
-        if (currentState->isInitializationDone())
+        if (currentState->isInitializationDone()==true)
             currentState->input();
 }
 
