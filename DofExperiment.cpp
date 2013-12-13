@@ -5,7 +5,7 @@
 #include "ModelLoader.hpp"
 #include "Common.hpp"
 #include "Gear.hpp"
-#include <exception>
+#include "GLError.hpp"
 
 DofExperiment::DofExperiment() {
     isEntered = true;
@@ -58,7 +58,7 @@ void DofExperiment::render() {
     projectionMatrix = glm::perspective(60.0f, (float) windowWidth / windowHeight, 1.0f, 10000.0f);
 
     glm::vec3 lightPosition = glm::vec3(360 * sin(animationTime), 40, 0);
-    
+
     for (int i = 0; i<this->sceneObjects.size(); i++) {
         SceneObject *sceneObject = sceneObjects[i];
         glUseProgram(programID);
@@ -74,25 +74,25 @@ void DofExperiment::render() {
         sceneObject->render(programID);
         glUseProgram(0);
     }
-/*
-    glUseProgram(programID);
-    static float rotationAngle = 0.0f;
-    rotationAngle += 5 * deltaTime;
-    modelMatrix = vehicleObject->getModelMatrix();
-    modelMatrix = glm::scale(modelMatrix, glm::vec3(10, 10, 10));
-    modelMatrix = glm::rotate(modelMatrix, rotationAngle, glm::vec3(0, 1, 0));
-    mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
-    normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
-    glUniformMatrix4fv(glGetUniformLocation(programID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-    glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
-    glUniformMatrix4fv(glGetUniformLocation(programID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-    glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    glUniform3f(glGetUniformLocation(programID, "lightPosition"), lightPosition.x, lightPosition.y, lightPosition.z);
-    glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
-    vehicleObject->render(programID);
-    glUseProgram(0);
-*/
-    
+    /*
+        glUseProgram(programID);
+        static float rotationAngle = 0.0f;
+        rotationAngle += 5 * deltaTime;
+        modelMatrix = vehicleObject->getModelMatrix();
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(10, 10, 10));
+        modelMatrix = glm::rotate(modelMatrix, rotationAngle, glm::vec3(0, 1, 0));
+        mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+        normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(programID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(programID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+        glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+        glUniform3f(glGetUniformLocation(programID, "lightPosition"), lightPosition.x, lightPosition.y, lightPosition.z);
+        glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
+        vehicleObject->render(programID);
+        glUseProgram(0);
+     */
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     //******************** END OF THE DRAWING SCENE ************************
 
@@ -289,13 +289,14 @@ bool DofExperiment::initialize() {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[0], 0);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "cannot create a framebuffer object" << std::endl;
+        std::cout << ">>>>> cannot create a framebuffer object" << std::endl;
+        check_gl_error();
         Gear::getSingleton()->exit();
         return false;
     } else {
         std::cout << "it seems like FBO is created and it's good to go" << std::endl;
     }
-    
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     // screen aligned quads
     const GLfloat quadVertices[] = {
