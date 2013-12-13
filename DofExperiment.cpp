@@ -16,7 +16,8 @@ DofExperiment::DofExperiment() {
 DofExperiment::~DofExperiment() {
     std::cout << "<<<<< Dof experiment destruction function " << std::endl;
     for (auto object : sceneObjects) {
-        delete object;
+        if (object)
+            delete object;
     }
     delete ShaderManager::getSingleton();
 }
@@ -289,10 +290,12 @@ bool DofExperiment::initialize() {
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << "cannot create a framebuffer object" << std::endl;
-        exit(-1);
+        Gear::getSingleton()->exit();
+        return false;
     } else {
         std::cout << "it seems like FBO is created and it's good to go" << std::endl;
     }
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     // screen aligned quads
     const GLfloat quadVertices[] = {
