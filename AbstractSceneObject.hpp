@@ -9,6 +9,7 @@
 #define	ABSTRACTSCENEOBJECT_HPP
 
 #include <GL/glew.h>
+#include <glm/glm.hpp>
 
 class AbstractSceneObject {
 public:
@@ -17,6 +18,8 @@ public:
 
     virtual void update(float dt) = 0;
     virtual void render(GLuint programID) = 0;
+    virtual glm::mat4 getModelMatrix() = 0;
+    
 };
 
 #endif	/* ABSTRACTSCENEOBJECT_HPP */

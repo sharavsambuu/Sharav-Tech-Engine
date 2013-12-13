@@ -103,23 +103,22 @@ void DofExperiment::render() {
 
     std::cout << "<<<<< object count : " << this->sceneObjects.size() << std::endl;
 
-    /*
-        for (int i = 0; i<this->sceneObjects.size(); i++) {
-            SceneObject *sceneObject = sceneObjects[i];
-            glUseProgram(programID);
-            glm::mat4 modelMatrix = sceneObject->getModelMatrix();
-            mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
-            normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
-            glUniformMatrix4fv(glGetUniformLocation(programID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-            glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
-            glUniformMatrix4fv(glGetUniformLocation(programID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-            glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-            glUniform3f(glGetUniformLocation(programID, "lightPosition"), lightPosition.x, lightPosition.y, lightPosition.z);
-            glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
-            sceneObject->render(programID);
-            glUseProgram(0);
-        }
-     */
+
+    for (auto& sceneObject : sceneObjects) {
+        glUseProgram(programID);
+        glm::mat4 modelMatrix = sceneObject->getModelMatrix();
+        mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+        normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(programID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(programID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+        glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+        glUniform3f(glGetUniformLocation(programID, "lightPosition"), lightPosition.x, lightPosition.y, lightPosition.z);
+        glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
+        sceneObject->render(programID);
+        glUseProgram(0);
+    }
+
     /*
         glUseProgram(programID);
         static float rotationAngle = 0.0f;
@@ -301,7 +300,7 @@ void DofExperiment::initialize() {
     sm->LinkProgramObject("dof");
     std::cout << "DOF ID is " << (*sm)["dof"]->GetID() << std::endl;
 
-    
+
     glGenTextures(1, &depthTexture);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -364,18 +363,14 @@ void DofExperiment::initialize() {
 
 
     ModelLoader modelLoader;
-    //SceneObject *sponzaObject = new SceneObject();
-    //modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
-    //sceneObjects.push_back(sponzaObject);
+    SceneObject *sponzaObject = new SceneObject();
+    modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
-    if (vehicleObject==NULL) {
-        std::cout<<"shit it's null"<<std::endl;
-        Gear::getSingleton()->exit();
-    }
     this->sceneObjects.push_back(vehicleObject);
-    
-    
+
+
     ////////////////////////////////////////////////////////////////////////////
 
     glViewport(0, 0, (int) windowWidth, (int) windowHeight);
