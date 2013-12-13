@@ -11,7 +11,7 @@
 class AbstractState {
 public:
     AbstractState();
-    virtual ~AbstractState();
+    virtual ~AbstractState() = 0;
 
     virtual void pause() = 0;
     virtual void resume() = 0;
@@ -19,6 +19,8 @@ public:
     virtual void input() = 0;
     virtual void update(float deltaTime) = 0;
     virtual void render() = 0;
+    
+    virtual bool isInitializationDone() = 0;
 
 };
 

@@ -6,7 +6,7 @@ layout(location=3) in vec3 in_tangent;
 layout(location=4) in vec3 in_bitangent;
 
 out vec2 vTexcoord;
-out vec3 vPosition; // world-space, it should be in view-space
+out vec3 vPosition; // view-space
 out vec3 vNormal;   // view-space
 out vec3 vEyeDir;   // view-space
 out vec3 vLightDir; // view-space

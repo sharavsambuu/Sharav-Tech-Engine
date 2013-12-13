@@ -18,6 +18,8 @@
 #include "Camera.hpp"
 #include "ShaderManager.hpp"
 #include "SceneObject.hpp"
+#include "ModelLoader.hpp"
+#include <vector>
 
 class DofExperiment : public AbstractState {
 public:
@@ -31,15 +33,17 @@ public:
     void update(float deltaTime);
     void render();
 
-    void initialize();
+    bool initialize();
+    bool isInitializationDone();
 private:
     bool isEntered;
     bool isFirstTime;
     float enteredTime;
 
+    bool isInitialized;
     int windowWidth;
     int windowHeight;
-    
+
     // logic
     bool wKeyPressed;
     bool sKeyPressed;
@@ -49,10 +53,12 @@ private:
     bool doGaus;
     bool doDOF;
 
-    glm::mat4 modelMatrix;
+    glm::mat4 sponzaModelMatrix;
+    glm::mat4 vehicleModelMatrix;
+
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
-    
+
     glm::mat4 mvpMatrix;
     glm::mat3 normalMatrix;
 
@@ -63,15 +69,14 @@ private:
 
     Camera* camera;
     ShaderManager* sm;
-    
+
     GLuint programID;
     GLuint quadProgramID;
     GLuint gausProgramID;
     GLuint dofProgramID;
     GLuint quadBufferID;
-    
-    SceneObject *sponzaObject;
-    SceneObject *vehicleObject;
+
+    std::vector<SceneObject *> objects;
     
     float animationTime;
     float rotationAngle;

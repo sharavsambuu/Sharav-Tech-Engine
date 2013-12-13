@@ -1,8 +1,15 @@
 #include "ModelLoader.hpp"
 #include "Gear.hpp"
 
-SceneObject* loadSceneModel(const std::string& filePath) {
-    SceneObject *sceneObject = new SceneObject();
+ModelLoader::ModelLoader() {
+    std::cout<<"<<<<< ModelLoader constructor"<<std::endl;
+}
+
+ModelLoader::~ModelLoader() {
+    std::cout<<"<<<<< ModelLoader destructor"<<std::endl;
+}
+
+void ModelLoader::loadSceneModel(const std::string& filePath, SceneObject* sceneObject) {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(
             filePath.c_str(),
@@ -26,10 +33,10 @@ SceneObject* loadSceneModel(const std::string& filePath) {
     for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
         processMesh(scene->mMeshes[i], sceneObject);
     }
-    return sceneObject;
+    return;
 }
 
-void processMesh(aiMesh* mesh, SceneObject *object) {
+void ModelLoader::processMesh(aiMesh* mesh, SceneObject *object) {
     float *normals, *textureCoordinates, *tangents, *bitangents;
     float *vertices = (float *) malloc(4 * mesh->mNumVertices * sizeof (float));
     if (mesh->HasNormals())
@@ -80,7 +87,7 @@ void processMesh(aiMesh* mesh, SceneObject *object) {
             mesh->mMaterialIndex);
 }
 
-void processMaterial(aiMaterial* material, int index, SceneObject *object) {
+void ModelLoader::processMaterial(aiMaterial* material, int index, SceneObject *object) {
     MaterialManager *mm = object->mm;
     std::cout << "================ ID " << index << "====================" << std::endl;
 

@@ -19,7 +19,8 @@ int main(int argc, char** argv) {
     std::cout << "<<<<< SYSTEM STARTING >>>>>" << std::endl;
 
     Gear *gear = Gear::getSingleton();
-    gear->addState("dof", new DofExperiment());
+    DofExperiment *dofExp = new DofExperiment();
+    gear->addState("dof", dofExp);
     gear->changeState("dof");
 
     while (gear->keepRunning()) {

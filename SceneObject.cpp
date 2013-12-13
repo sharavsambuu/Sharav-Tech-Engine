@@ -5,7 +5,7 @@
 #include "ShaderManager.hpp"
 
 SceneObject::SceneObject() {
-    this->modelMatrix = glm::mat4(1.0f);
+    this->modelMatrix = glm::mat4(1.0);
     this->boundingBoxMin = glm::vec3(FLT_MAX);
     this->boundingBoxMax = glm::vec3(FLT_MIN);
     this->mm = new MaterialManager();
@@ -185,4 +185,8 @@ void SceneObject::render(GLuint programID) {
 
 glm::mat4 SceneObject::getModelMatrix() {
     return this->modelMatrix;
+}
+
+int SceneObject::getSomething() {
+    return 89;
 }

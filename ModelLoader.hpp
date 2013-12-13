@@ -15,9 +15,15 @@
 #include <iostream>
 #include <string>
 
-void processMaterial(aiMaterial* material, int index, SceneObject *object);
-void processMesh(aiMesh* mesh, SceneObject *object);
-SceneObject* loadSceneModel(const std::string& filePath);
+class ModelLoader {
+public:
+    ModelLoader();
+    ~ModelLoader();
+    
+    void loadSceneModel(const std::string& filePath, SceneObject* sceneObject);
+    void processMaterial(aiMaterial* material, int index, SceneObject *object);
+    void processMesh(aiMesh* mesh, SceneObject *object);
+};
 
 #endif	/* MODELLOADER_HPP */
 

@@ -31,7 +31,7 @@ typedef struct {
 class SceneObject {
 public:
     SceneObject();
-    virtual ~SceneObject();
+    ~SceneObject();
     void render(GLuint programID);
     void update(float dt);
     void addMesh(
@@ -54,6 +54,8 @@ public:
     glm::vec3 getBoundingBoxMax();
 
     glm::mat4 getModelMatrix();
+    
+    int getSomething();
 
     MaterialManager *mm;
 protected:
@@ -62,6 +64,7 @@ protected:
     glm::mat4 parentMatrix;
     glm::vec3 boundingBoxMin;
     glm::vec3 boundingBoxMax;
+    
 };
 
 #endif	/* SCENEOBJECT_HPP */
