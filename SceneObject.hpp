@@ -55,8 +55,6 @@ public:
 
     glm::mat4 getModelMatrix();
     
-    int getSomething();
-
     MaterialManager *mm;
 protected:
     std::vector<Mesh> meshes;

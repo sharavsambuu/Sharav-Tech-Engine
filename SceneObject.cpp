@@ -186,7 +186,3 @@ void SceneObject::render(GLuint programID) {
 glm::mat4 SceneObject::getModelMatrix() {
     return this->modelMatrix;
 }
-
-int SceneObject::getSomething() {
-    return 89;
-}

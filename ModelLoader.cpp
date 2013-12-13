@@ -26,6 +26,7 @@ void ModelLoader::loadSceneModel(const std::string& filePath, SceneObject* scene
     if (!scene) {
         std::cout << "error in loading file : " << importer.GetErrorString() << std::endl;
         Gear::getSingleton()->exit();
+        return;
     }
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         processMaterial(scene->mMaterials[i], i, sceneObject);
