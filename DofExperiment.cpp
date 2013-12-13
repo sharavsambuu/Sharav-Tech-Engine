@@ -301,6 +301,7 @@ void DofExperiment::initialize() {
     sm->LinkProgramObject("dof");
     std::cout << "DOF ID is " << (*sm)["dof"]->GetID() << std::endl;
 
+    
     glGenTextures(1, &depthTexture);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -363,14 +364,18 @@ void DofExperiment::initialize() {
 
 
     ModelLoader modelLoader;
-    SceneObject *sponzaObject = new SceneObject();
-    modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
-    sceneObjects.push_back(sponzaObject);
+    //SceneObject *sponzaObject = new SceneObject();
+    //modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    //sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
-    sceneObjects.push_back(vehicleObject);
+    if (vehicleObject==NULL) {
+        std::cout<<"shit it's null"<<std::endl;
+        Gear::getSingleton()->exit();
+    }
+    this->sceneObjects.push_back(vehicleObject);
     
-
+    
     ////////////////////////////////////////////////////////////////////////////
 
     glViewport(0, 0, (int) windowWidth, (int) windowHeight);

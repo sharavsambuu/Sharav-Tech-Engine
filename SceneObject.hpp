@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include "MaterialManager.hpp"
+#include "AbstractSceneObject.hpp"
 
 typedef struct {
     GLuint vertexID;
@@ -28,12 +29,14 @@ typedef struct {
     glm::vec3 boundingBoxMax;
 } Mesh;
 
-class SceneObject {
+class SceneObject : public AbstractSceneObject{
 public:
     SceneObject();
     ~SceneObject();
-    void render(GLuint programID);
+    
     void update(float dt);
+    void render(GLuint programID);
+    
     void addMesh(
             float *vertices, int numVertices,
             float *normals, int numNormals,

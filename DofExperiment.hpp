@@ -19,6 +19,7 @@
 #include "ShaderManager.hpp"
 #include "SceneObject.hpp"
 #include "ModelLoader.hpp"
+#include "AbstractSceneObject.hpp"
 #include <vector>
 
 class DofExperiment : public AbstractState {
@@ -36,6 +37,8 @@ public:
     void initialize();
     bool isInitializationDone();
 private:
+    std::vector<AbstractSceneObject *> sceneObjects;
+    
     bool isEntered;
     bool isFirstTime;
     float enteredTime;
@@ -76,7 +79,7 @@ private:
     GLuint dofProgramID;
     GLuint quadBufferID;
 
-    std::vector<SceneObject *> sceneObjects;
+    
     
     float animationTime;
     float rotationAngle;

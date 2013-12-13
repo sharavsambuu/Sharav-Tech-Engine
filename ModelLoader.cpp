@@ -31,11 +31,8 @@ bool ModelLoader::loadSceneModel(const std::string& filePath, SceneObject* scene
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         processMaterial(scene->mMaterials[i], i, sceneObject);
     }
-    std::cout << "loading mesh" << std::endl;
     for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
-        std::cout << "processing mesh" << std::endl;
         processMesh(scene->mMeshes[i], sceneObject);
-        std::cout << "processed mesh" << std::endl;
     }
     return true;
 }
