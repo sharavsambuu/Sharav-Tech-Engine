@@ -56,12 +56,8 @@ private:
     bool doGaus;
     bool doDOF;
 
-    glm::mat4 sponzaModelMatrix;
-    glm::mat4 vehicleModelMatrix;
-
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
-
     glm::mat4 mvpMatrix;
     glm::mat3 normalMatrix;
 
@@ -79,8 +75,6 @@ private:
     GLuint dofProgramID;
     GLuint quadBufferID;
 
-    
-    
     float animationTime;
     float rotationAngle;
     float ambientLightIntensity;

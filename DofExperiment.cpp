@@ -12,6 +12,8 @@ DofExperiment::DofExperiment() {
     isEntered = true;
     isFirstTime = true;
     isInitialized = false;
+    doGaus = false;
+    doDOF = true;
 }
 
 DofExperiment::~DofExperiment() {
@@ -68,6 +70,14 @@ void DofExperiment::input() {
         this->dKeyPressed = true;
     if (app->getKeyRelease(GLFW_KEY_D))
         this->dKeyPressed = false;
+
+    if (app->getKeyPress(GLFW_KEY_1)) {
+        doDOF = !doDOF;
+    }
+    if (app->getKeyPress(GLFW_KEY_2)) {
+        doGaus = !doGaus;
+    }
+ 
 }
 
 void DofExperiment::update(float deltaTime) {
@@ -89,6 +99,7 @@ void DofExperiment::update(float deltaTime) {
     this->viewMatrix = camera->getViewMatrix();
     this->projectionMatrix = camera->getProjectionMatrix();
 
+    this->animationTime += deltaTime;
 }
 
 void DofExperiment::render() {
@@ -97,13 +108,8 @@ void DofExperiment::render() {
 
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    projectionMatrix = glm::perspective(60.0f, (float) windowWidth / windowHeight, 1.0f, 10000.0f);
-
+    
     glm::vec3 lightPosition = glm::vec3(360 * sin(animationTime), 40, 0);
-
-    std::cout << "<<<<< object count : " << this->sceneObjects.size() << std::endl;
-
-
     for (auto& sceneObject : sceneObjects) {
         glUseProgram(programID);
         glm::mat4 modelMatrix = sceneObject->getModelMatrix();
@@ -118,26 +124,6 @@ void DofExperiment::render() {
         sceneObject->render(programID);
         glUseProgram(0);
     }
-
-    /*
-        glUseProgram(programID);
-        static float rotationAngle = 0.0f;
-        rotationAngle += 5 * deltaTime;
-        modelMatrix = vehicleObject->getModelMatrix();
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(10, 10, 10));
-        modelMatrix = glm::rotate(modelMatrix, rotationAngle, glm::vec3(0, 1, 0));
-        mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
-        normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(programID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(programID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-        glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-        glUniform3f(glGetUniformLocation(programID, "lightPosition"), lightPosition.x, lightPosition.y, lightPosition.z);
-        glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
-        vehicleObject->render(programID);
-        glUseProgram(0);
-     */
-
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     //******************** END OF THE DRAWING SCENE ************************
 
@@ -180,7 +166,7 @@ void DofExperiment::render() {
     }
     if (doDOF == true) {
         glm::mat4 projectionInverseMatrix = glm::inverse(projectionMatrix);
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 5; i++) {
             glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture[1], 0);
             glViewport(0, 0, windowWidth, windowHeight);
@@ -361,15 +347,15 @@ void DofExperiment::initialize() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
     ModelLoader modelLoader;
     SceneObject *sponzaObject = new SceneObject();
     modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
     sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
+    glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
+    vehicleObject->setModelMatrix(glm::scale(vehicleObject->getModelMatrix(), glm::vec3(10, 10, 10)));
     this->sceneObjects.push_back(vehicleObject);
-
 
     ////////////////////////////////////////////////////////////////////////////
 

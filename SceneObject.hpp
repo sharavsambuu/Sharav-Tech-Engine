@@ -57,6 +57,7 @@ public:
     glm::vec3 getBoundingBoxMax();
 
     glm::mat4 getModelMatrix();
+    void setModelMatrix(glm::mat4 modelMatrix);
     
     MaterialManager *mm;
 protected:

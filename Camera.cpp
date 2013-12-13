@@ -8,11 +8,11 @@ Camera::Camera() {
     verticalAngle = 0.0f;
     width = SCREEN_WIDTH;
     height = SCREEN_HEIGHT;
-    moveSpeed = 1.0f;
+    moveSpeed = 100.0f;
     sensitivity = 0.001f;
     fov = 60.0f;
-    zNear = 0.01;
-    zFar = 1000.0f;
+    zNear = 1.0;
+    zFar = 10000.0f;
 }
 
 Camera::~Camera() {

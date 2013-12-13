@@ -186,3 +186,7 @@ void SceneObject::render(GLuint programID) {
 glm::mat4 SceneObject::getModelMatrix() {
     return this->modelMatrix;
 }
+
+void SceneObject::setModelMatrix(glm::mat4 modelMatrix) {
+    this->modelMatrix = modelMatrix;
+}
