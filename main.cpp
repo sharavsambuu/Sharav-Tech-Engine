@@ -18,7 +18,7 @@ using namespace std;
 int main(int argc, char** argv) {
     std::cout << "<<<<< WELCOME TO STE 0.0.1 >>>>>" << std::endl;
     std::cout << "<<<<< SYSTEM STARTING >>>>>" << std::endl;
-    GLFWApp::getSingleton();
+    //GLFWApp::getSingleton();
     Gear *gear = Gear::getSingleton();
     DofExperiment *dofExp = new DofExperiment();
     gear->addState("dof", dofExp);

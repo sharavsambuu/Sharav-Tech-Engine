@@ -2,14 +2,14 @@
 #include "Gear.hpp"
 
 ModelLoader::ModelLoader() {
-    std::cout<<"<<<<< ModelLoader constructor"<<std::endl;
+    std::cout << "<<<<< ModelLoader constructor" << std::endl;
 }
 
 ModelLoader::~ModelLoader() {
-    std::cout<<"<<<<< ModelLoader destructor"<<std::endl;
+    std::cout << "<<<<< ModelLoader destructor" << std::endl;
 }
 
-void ModelLoader::loadSceneModel(const std::string& filePath, SceneObject* sceneObject) {
+bool ModelLoader::loadSceneModel(const std::string& filePath, SceneObject* sceneObject) {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(
             filePath.c_str(),
@@ -26,27 +26,30 @@ void ModelLoader::loadSceneModel(const std::string& filePath, SceneObject* scene
     if (!scene) {
         std::cout << "error in loading file : " << importer.GetErrorString() << std::endl;
         Gear::getSingleton()->exit();
-        return;
+        return false;
     }
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         processMaterial(scene->mMaterials[i], i, sceneObject);
     }
+    std::cout << "loading mesh" << std::endl;
     for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
+        std::cout << "processing mesh" << std::endl;
         processMesh(scene->mMeshes[i], sceneObject);
+        std::cout << "processed mesh" << std::endl;
     }
-    return;
+    return true;
 }
 
 void ModelLoader::processMesh(aiMesh* mesh, SceneObject *object) {
     float *normals, *textureCoordinates, *tangents, *bitangents;
-    float *vertices = (float *) malloc(4 * mesh->mNumVertices * sizeof (float));
+    float *vertices = new float[4 * mesh->mNumVertices];
     if (mesh->HasNormals())
-        normals = (float *) malloc(3 * mesh->mNumVertices * sizeof (float));
+        normals = new float[3 * mesh->mNumVertices];
     if (mesh->HasTextureCoords(0))
-        textureCoordinates = (float *) malloc(2 * mesh->mNumVertices * sizeof (float));
+        textureCoordinates = new float[2 * mesh->mNumVertices];
     if (mesh->HasTangentsAndBitangents()) {
-        tangents = (float *) malloc(3 * mesh->mNumVertices * sizeof (float));
-        bitangents = (float *) malloc(3 * mesh->mNumVertices * sizeof (float));
+        tangents = new float[3 * mesh->mNumVertices];
+        bitangents = new float [3 * mesh->mNumVertices];
     }
 
     for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
@@ -72,7 +75,7 @@ void ModelLoader::processMesh(aiMesh* mesh, SceneObject *object) {
             bitangents[3 * i + 2] = mesh->mBitangents[i].z;
         }
     }
-    int *faces = (int *) malloc(3 * mesh->mNumFaces * sizeof (int));
+    int *faces = new int[3 * mesh->mNumFaces];
     for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
         faces[3 * i + 0] = mesh->mFaces[i].mIndices[0];
         faces[3 * i + 1] = mesh->mFaces[i].mIndices[1];
@@ -86,6 +89,12 @@ void ModelLoader::processMesh(aiMesh* mesh, SceneObject *object) {
             bitangents, mesh->mNumVertices,
             faces, mesh->mNumFaces,
             mesh->mMaterialIndex);
+
+    delete [] vertices;
+    delete [] normals;
+    delete [] textureCoordinates;
+    delete [] tangents;
+    delete [] bitangents;
 }
 
 void ModelLoader::processMaterial(aiMaterial* material, int index, SceneObject *object) {

@@ -33,7 +33,7 @@ public:
     void update(float deltaTime);
     void render();
 
-    bool initialize();
+    void initialize();
     bool isInitializationDone();
 private:
     bool isEntered;

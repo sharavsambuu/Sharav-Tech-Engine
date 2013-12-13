@@ -6,6 +6,7 @@
 #include "Common.hpp"
 #include "Gear.hpp"
 #include "GLError.hpp"
+#include <thread>
 
 DofExperiment::DofExperiment() {
     isEntered = true;
@@ -36,16 +37,57 @@ void DofExperiment::resume() {
     std::cout << "<<<<< Entered DoF experimentation State" << std::endl;
     if (isFirstTime) {
         isInitialized = false;
-        isInitialized = initialize();
+        initialize();
+        //std::thread initThread(&DofExperiment::initialize, DofExperiment());
+        //initThread.join();
         isFirstTime = false;
     }
 }
 
 void DofExperiment::input() {
+    GLFWApp *app = GLFWApp::getSingleton();
 
+    camera->updateAngles(app->getDeltaMouseX(), app->getDeltaMouseY());
+
+    if (app->getKeyPress(GLFW_KEY_W))
+        this->wKeyPressed = true;
+    if (app->getKeyRelease(GLFW_KEY_W))
+        this->wKeyPressed = false;
+
+    if (app->getKeyPress(GLFW_KEY_A))
+        this->aKeyPressed = true;
+    if (app->getKeyRelease(GLFW_KEY_A))
+        this->aKeyPressed = false;
+
+    if (app->getKeyPress(GLFW_KEY_S))
+        this->sKeyPressed = true;
+    if (app->getKeyRelease(GLFW_KEY_S))
+        this->sKeyPressed = false;
+
+    if (app->getKeyPress(GLFW_KEY_D))
+        this->dKeyPressed = true;
+    if (app->getKeyRelease(GLFW_KEY_D))
+        this->dKeyPressed = false;
 }
 
 void DofExperiment::update(float deltaTime) {
+    camera->moveForward(false);
+    camera->moveBackward(false);
+    camera->moveLeft(false);
+    camera->moveRight(false);
+    if (wKeyPressed)
+        camera->moveForward(true);
+    if (sKeyPressed)
+        camera->moveBackward(true);
+    if (aKeyPressed)
+        camera->moveLeft(true);
+    if (dKeyPressed)
+        camera->moveRight(true);
+
+    this->camera->update(deltaTime);
+
+    this->viewMatrix = camera->getViewMatrix();
+    this->projectionMatrix = camera->getProjectionMatrix();
 
 }
 
@@ -59,21 +101,25 @@ void DofExperiment::render() {
 
     glm::vec3 lightPosition = glm::vec3(360 * sin(animationTime), 40, 0);
 
-    for (int i = 0; i<this->sceneObjects.size(); i++) {
-        SceneObject *sceneObject = sceneObjects[i];
-        glUseProgram(programID);
-        glm::mat4 modelMatrix = sceneObject->getModelMatrix();
-        mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
-        normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(programID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(programID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-        glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-        glUniform3f(glGetUniformLocation(programID, "lightPosition"), lightPosition.x, lightPosition.y, lightPosition.z);
-        glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
-        sceneObject->render(programID);
-        glUseProgram(0);
-    }
+    std::cout << "<<<<< object count : " << this->sceneObjects.size() << std::endl;
+
+    /*
+        for (int i = 0; i<this->sceneObjects.size(); i++) {
+            SceneObject *sceneObject = sceneObjects[i];
+            glUseProgram(programID);
+            glm::mat4 modelMatrix = sceneObject->getModelMatrix();
+            mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+            normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
+            glUniformMatrix4fv(glGetUniformLocation(programID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+            glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+            glUniformMatrix4fv(glGetUniformLocation(programID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+            glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+            glUniform3f(glGetUniformLocation(programID, "lightPosition"), lightPosition.x, lightPosition.y, lightPosition.z);
+            glUniform1f(glGetUniformLocation(programID, "ambientIntensity"), ambientLightIntensity);
+            sceneObject->render(programID);
+            glUseProgram(0);
+        }
+     */
     /*
         glUseProgram(programID);
         static float rotationAngle = 0.0f;
@@ -201,7 +247,10 @@ void DofExperiment::render() {
     glUseProgram(0);
 }
 
-bool DofExperiment::initialize() {
+void DofExperiment::initialize() {
+    this->windowWidth = (int) SCREEN_WIDTH;
+    this->windowHeight = (int) SCREEN_HEIGHT;
+    camera = new Camera();
     ShaderManager* sm = ShaderManager::getSingleton();
 
     sm->CreateShaderProgram("phong");
@@ -252,16 +301,6 @@ bool DofExperiment::initialize() {
     sm->LinkProgramObject("dof");
     std::cout << "DOF ID is " << (*sm)["dof"]->GetID() << std::endl;
 
-    ModelLoader *modelLoader = new ModelLoader();
-    //SceneObject *sponzaObject = new SceneObject();
-    //modelLoader->loadSceneModel("models/sponza.obj", sponzaObject);
-    //sceneObjects.push_back(sponzaObject);
-    SceneObject *vehicleObject = new SceneObject();
-    modelLoader->loadSceneModel("models/r8.obj", vehicleObject);
-    sceneObjects.push_back(vehicleObject);
-    delete modelLoader;
-
-
     glGenTextures(1, &depthTexture);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -292,7 +331,8 @@ bool DofExperiment::initialize() {
         std::cout << ">>>>> cannot create a framebuffer object" << std::endl;
         check_gl_error();
         Gear::getSingleton()->exit();
-        return false;
+        isInitialized = false;
+        return;
     } else {
         std::cout << "it seems like FBO is created and it's good to go" << std::endl;
     }
@@ -321,24 +361,29 @@ bool DofExperiment::initialize() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+
+    ModelLoader modelLoader;
+    SceneObject *sponzaObject = new SceneObject();
+    modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    sceneObjects.push_back(sponzaObject);
+    SceneObject *vehicleObject = new SceneObject();
+    modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
+    sceneObjects.push_back(vehicleObject);
+    
+
     ////////////////////////////////////////////////////////////////////////////
 
-    projectionMatrix = glm::mat4(1.0f);
-    viewMatrix = glm::mat4(1.0f);
-    viewMatrix = glm::translate(viewMatrix, glm::vec3(0, 0, -2));
     glViewport(0, 0, (int) windowWidth, (int) windowHeight);
-    projectionMatrix = glm::perspective(60.0f, (float) windowWidth / windowHeight, 1.0f, 10000.0f);
-    glm::mat4 mvpMatrix;
-    glm::mat3 normalMatrix;
 
-    float ambientLightIntensity = 0.2;
+    ambientLightIntensity = 0.2;
 
     programID = (*sm)["phong"]->GetID();
     quadProgramID = (*sm)["quad"]->GetID();
     gausProgramID = (*sm)["gaus"]->GetID();
     dofProgramID = (*sm)["dof"]->GetID();
 
-    float animationTime = 0.0f;
+    animationTime = 0.0f;
 
-    return true; // initialization is done
+    this->isInitialized = true;
+    //return true; // initialization is done
 }
