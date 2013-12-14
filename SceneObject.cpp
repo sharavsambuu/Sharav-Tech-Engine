@@ -54,8 +54,13 @@ void SceneObject::addMesh(
         float *bitangents, int numBitangents,
         int *faces, int numFaces,
         int materialIndex) {
-
-    GLuint programID = (*ShaderManager::getSingleton())["phong"]->GetID();
+    ShaderManager *sm = ShaderManager::getSingleton();
+    GLuint programID;
+    if (sm->isUsingGBuffer) {
+        programID = (*sm)["gbuffer"]->GetID();
+    } else {
+        programID = (*sm)["phong"]->GetID();
+    }
 
     GLuint positionAttrib = glGetAttribLocation(programID, "in_position");
     GLuint normalAttrib = glGetAttribLocation(programID, "in_normal");

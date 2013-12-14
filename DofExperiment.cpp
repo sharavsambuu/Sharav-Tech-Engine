@@ -22,6 +22,11 @@ DofExperiment::~DofExperiment() {
         if (object)
             delete object;
     }
+    glDeleteFramebuffers(1, &bufferFBO);
+    glDeleteFramebuffers(1, &processFBO);
+    glDeleteTextures(2, colourTexture);
+    glDeleteTextures(1, &depthTexture);
+    glDeleteBuffers(1, &quadBufferID);
     delete ShaderManager::getSingleton();
 }
 
@@ -50,7 +55,7 @@ void DofExperiment::input() {
     GLFWApp *app = GLFWApp::getSingleton();
 
     camera->updateAngles(app->getDeltaMouseX(), app->getDeltaMouseY());
-
+    
     if (app->getKeyPress(GLFW_KEY_W))
         this->wKeyPressed = true;
     if (app->getKeyRelease(GLFW_KEY_W))
@@ -77,7 +82,7 @@ void DofExperiment::input() {
     if (app->getKeyPress(GLFW_KEY_2)) {
         doGaus = !doGaus;
     }
- 
+
 }
 
 void DofExperiment::update(float deltaTime) {
@@ -108,9 +113,9 @@ void DofExperiment::render() {
 
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    
+
     glm::vec3 lightPosition = glm::vec3(360 * sin(animationTime), 40, 0);
-    for (auto& sceneObject : sceneObjects) {
+    for (AbstractSceneObject* sceneObject : sceneObjects) {
         glUseProgram(programID);
         glm::mat4 modelMatrix = sceneObject->getModelMatrix();
         mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;

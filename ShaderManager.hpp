@@ -32,6 +32,7 @@ public:
     void BindAttribute(std::string programName, GLuint index, std::string attribName);
     void LoadShaderSource(std::string shaderName, std::string sourceFile);
     ShaderProgram * operator[](const std::string &programName);
+    bool isUsingGBuffer;
 private:
     std::map<std::string, ShaderProgram *> shaderPrograms;
     std::map<std::string, Shader *> shaders;

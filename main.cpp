@@ -10,6 +10,7 @@
 #include "GLFWApp.hpp"
 #include "Gear.hpp"
 #include "DofExperiment.hpp"
+#include "DefferedRenderingExperiment.hpp"
 using namespace std;
 
 /*
@@ -18,18 +19,17 @@ using namespace std;
 int main(int argc, char** argv) {
     std::cout << "<<<<< WELCOME TO STE 0.0.1 >>>>>" << std::endl;
     std::cout << "<<<<< SYSTEM STARTING >>>>>" << std::endl;
-    //GLFWApp::getSingleton();
     Gear *gear = Gear::getSingleton();
     DofExperiment *dofExp = new DofExperiment();
+    DefferedRenderingExperiment *defferedRenderingExp = new DefferedRenderingExperiment();
     gear->addState("dof", dofExp);
-    gear->changeState("dof");    
-
+    gear->addState("deffered", defferedRenderingExp);
+    gear->changeState("deffered");    
     while (gear->keepRunning()) {
         gear->input();
         gear->update();
         gear->render();
-    }
-    
+    }    
     delete gear;
     std::cout << "<<<<< SYSTEM ENDED >>>>>" << std::endl;
     return 0;

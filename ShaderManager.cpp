@@ -12,6 +12,7 @@ ShaderManager* ShaderManager::getSingleton() {
 }
 
 ShaderManager::ShaderManager() {
+    isUsingGBuffer = false;
     std::cout << "<<<<< shader manager construction function " << std::endl;
 }
 
