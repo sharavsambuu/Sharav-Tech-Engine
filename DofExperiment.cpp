@@ -6,6 +6,7 @@
 #include "Common.hpp"
 #include "Gear.hpp"
 #include "GLError.hpp"
+#include "PointLight.hpp"
 #include <thread>
 
 DofExperiment::DofExperiment() {
@@ -55,7 +56,7 @@ void DofExperiment::input() {
     GLFWApp *app = GLFWApp::getSingleton();
 
     camera->updateAngles(app->getDeltaMouseX(), app->getDeltaMouseY());
-    
+
     if (app->getKeyPress(GLFW_KEY_W))
         this->wKeyPressed = true;
     if (app->getKeyRelease(GLFW_KEY_W))
@@ -105,6 +106,8 @@ void DofExperiment::update(float deltaTime) {
     this->projectionMatrix = camera->getProjectionMatrix();
 
     this->animationTime += deltaTime;
+
+    pointLight->update(deltaTime);
 }
 
 void DofExperiment::render() {
@@ -115,6 +118,7 @@ void DofExperiment::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     glm::vec3 lightPosition = glm::vec3(360 * sin(animationTime), 40, 0);
+    //glm::vec3 lightPosition = pointLight->getPosition();
     for (AbstractSceneObject* sceneObject : sceneObjects) {
         glUseProgram(programID);
         glm::mat4 modelMatrix = sceneObject->getModelMatrix();
@@ -352,9 +356,13 @@ void DofExperiment::initialize() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    pointLight = new PointLight();
+    pointLight->setSpeed(50);
     ModelLoader modelLoader;
     SceneObject *sponzaObject = new SceneObject();
     modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    pointLight->setMinBoundary(sponzaObject->getBoundingBoxMin());
+    pointLight->setMaxBoundary(sponzaObject->getBoundingBoxMax());
     sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);

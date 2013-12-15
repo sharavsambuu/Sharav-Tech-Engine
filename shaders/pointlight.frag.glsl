@@ -37,7 +37,7 @@ void main(void)
 
     vec4 diffuseColor  = texture2D(material_diffuse_texture, vTexcoord);
     vec4 ambientColor  = texture2D(material_ambient_texture, vTexcoord);
-    vec4 normalColor   = vec4(texture2D(material_normal_texture , vTexcoord).xyz, 1.0);
+    vec4 normalColor   = texture2D(material_normal_texture , vTexcoord);
     vec4 specularColor = texture2D(material_specular_texture, vTexcoord);
     vec4 opacityColor  = texture2D(material_opacity_texture, vTexcoord);
 

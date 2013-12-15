@@ -18,6 +18,7 @@ public:
     virtual void update(float dt) = 0;
     virtual glm::vec3 getPosition() = 0;
     virtual float getRadius() = 0;
+    virtual glm::vec4 getColor() = 0;
     
 };
 

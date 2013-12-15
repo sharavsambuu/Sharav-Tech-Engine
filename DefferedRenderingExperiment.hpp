@@ -41,6 +41,7 @@ public:
 private:
     std::vector<AbstractSceneObject *> sceneObjects;
     std::vector<AbstractLight *> sceneLights;
+    SceneObject *pointLightVolume;
     Camera* camera;
     
     bool isEntered;
@@ -63,7 +64,8 @@ private:
     glm::mat3 normalMatrix;
 
     GLuint gbufferProgramID;
-    GLuint quadProgramID;
+    GLuint lightingProgramID;
+    GLuint combineProgramID;
     // first pass
     GLuint gbufferFBO; // G-Buffer
     GLuint colourTexture; // albedo

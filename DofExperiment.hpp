@@ -20,6 +20,7 @@
 #include "SceneObject.hpp"
 #include "ModelLoader.hpp"
 #include "AbstractSceneObject.hpp"
+#include "PointLight.hpp"
 #include <vector>
 
 class DofExperiment : public AbstractState {
@@ -79,6 +80,7 @@ private:
     float rotationAngle;
     float ambientLightIntensity;
     glm::vec3 lightPosition;
+    PointLight* pointLight;
 };
 
 #endif	/* DOFEXPERIMENT_HPP */

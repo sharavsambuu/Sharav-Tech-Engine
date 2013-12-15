@@ -26,12 +26,23 @@ public:
     float getRadius();
     void setRadius(float radius);
     
+    float getSpeed();
+    void setSpeed(float speed);
+    
+    void setMinBoundary(glm::vec3 p);
+    void setMaxBoundary(glm::vec3 p);
+    
     void update(float dt);
     
 private:
+    
     glm::vec3 position;
     glm::vec4 color;
     float radius;
+    float moveSpeed;
+    glm::vec3 randomCheckPoint;
+    glm::vec3 minBoundaries;
+    glm::vec3 maxBoundaries;
 };
 
 #endif	/* POINTLIGHT_HPP */

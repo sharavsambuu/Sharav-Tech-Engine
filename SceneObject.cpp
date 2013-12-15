@@ -8,6 +8,7 @@ SceneObject::SceneObject() {
     this->modelMatrix = glm::mat4(1.0);
     this->boundingBoxMin = glm::vec3(FLT_MAX);
     this->boundingBoxMax = glm::vec3(FLT_MIN);
+    this->isLightVolume = false;
     this->mm = new MaterialManager();
 }
 
@@ -180,6 +181,7 @@ void SceneObject::render(GLuint programID) {
     for (std::vector<Mesh>::iterator it = this->meshes.begin(); it != this->meshes.end(); it++) {
         Mesh m = (*it);
         Material *mat = this->mm->getMaterial(m.material);
+        mat->setLightMaterialBool(this->isLightVolume);
         mat->bindMaterial(programID);
         glBindVertexArray(m.vaoID);
         glDrawElements(GL_TRIANGLES, 3 * m.numFaces, GL_UNSIGNED_INT, m.faces);

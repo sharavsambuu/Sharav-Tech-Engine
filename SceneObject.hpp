@@ -59,6 +59,8 @@ public:
     glm::mat4 getModelMatrix();
     void setModelMatrix(glm::mat4 modelMatrix);
     
+    void setLightVolumeBool(bool b) { this->isLightVolume = b; }
+    
     MaterialManager *mm;
 protected:
     std::vector<Mesh> meshes;
@@ -66,7 +68,7 @@ protected:
     glm::mat4 parentMatrix;
     glm::vec3 boundingBoxMin;
     glm::vec3 boundingBoxMax;
-    
+    bool isLightVolume;
 };
 
 #endif	/* SCENEOBJECT_HPP */

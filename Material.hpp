@@ -106,13 +106,18 @@ public:
     void bindMaterial(GLuint programID);
     void unbindMaterial();
 
+    void setLightMaterialBool(bool b) {
+        this->isLightVolumeMaterial = b;
+    }
+
     bool hasDiffuseTexture;
     bool hasNormalTexture;
     bool hasSpecularTexture;
     bool hasAmbientTexture;
     bool hasOpacityTexture;
-    
+
 private:
+    bool isLightVolumeMaterial;
     glm::vec4 diffuseColor;
     glm::vec3 ambientColor;
     glm::vec3 specularColor;
@@ -123,7 +128,7 @@ private:
     GLuint specularTextureID;
     GLuint ambientTextureID;
     GLuint opacityTextureID;
-    
+
 };
 
 #endif	/* MATERIAL_HPP */

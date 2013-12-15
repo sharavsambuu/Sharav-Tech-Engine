@@ -19,6 +19,7 @@ Material::Material() {
     this->normalTextureID = 0;
     this->specularTextureID = 0;
     this->opacityTextureID = 0;
+    this->isLightVolumeMaterial = false;
 }
 
 Material::~Material() {
@@ -27,7 +28,7 @@ Material::~Material() {
     glDeleteTextures(1, &this->specularTextureID);
     glDeleteTextures(1, &this->ambientTextureID);
     glDeleteTextures(1, &this->opacityTextureID);
-    std::cout << "<<<<< Material destructor function" << std::endl;
+    //std::cout << "<<<<< Material destructor function" << std::endl;
 }
 
 void Material::loadDiffuseTexture(const std::string& path) {
@@ -156,30 +157,32 @@ void Material::loadOpacityTexture(const std::string& path) {
 }
 
 void Material::bindMaterial(GLuint programID) {
-    GLuint diffuseTextureUniformID = glGetUniformLocation(programID, "material_diffuse_texture");
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, this->diffuseTextureID);
-    glUniform1i(diffuseTextureUniformID, 0);
+    if (!isLightVolumeMaterial) {
+        GLuint diffuseTextureUniformID = glGetUniformLocation(programID, "material_diffuse_texture");
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, this->diffuseTextureID);
+        glUniform1i(diffuseTextureUniformID, 0);
 
-    GLuint normalTextureUniformID = glGetUniformLocation(programID, "material_normal_texture");
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, this->normalTextureID);
-    glUniform1i(normalTextureUniformID, 1);
+        GLuint normalTextureUniformID = glGetUniformLocation(programID, "material_normal_texture");
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, this->normalTextureID);
+        glUniform1i(normalTextureUniformID, 1);
 
-    GLuint specularTextureUniformID = glGetUniformLocation(programID, "material_specular_texture");
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, this->specularTextureID);
-    glUniform1i(specularTextureUniformID, 2);
+        GLuint specularTextureUniformID = glGetUniformLocation(programID, "material_specular_texture");
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, this->specularTextureID);
+        glUniform1i(specularTextureUniformID, 2);
 
-    GLuint ambientTextureUniformID = glGetUniformLocation(programID, "material_ambient_texture");
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, this->ambientTextureID);
-    glUniform1i(ambientTextureUniformID, 3);
+        GLuint ambientTextureUniformID = glGetUniformLocation(programID, "material_ambient_texture");
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, this->ambientTextureID);
+        glUniform1i(ambientTextureUniformID, 3);
 
-    GLuint opacityTextureUniformID = glGetUniformLocation(programID, "material_opacity_texture");
-    glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, this->opacityTextureID);
-    glUniform1i(opacityTextureUniformID, 4);
+        GLuint opacityTextureUniformID = glGetUniformLocation(programID, "material_opacity_texture");
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_2D, this->opacityTextureID);
+        glUniform1i(opacityTextureUniformID, 4);
+    }
 
     GLuint shininessUniformID = glGetUniformLocation(programID, "material_shininess");
     glUniform1f(shininessUniformID, this->shininess);
@@ -196,36 +199,37 @@ void Material::bindMaterial(GLuint programID) {
     GLuint emissiveColorUniformID = glGetUniformLocation(programID, "material_emissive_color");
     glUniform3f(emissiveColorUniformID, this->emissiveColor.x, this->emissiveColor.y, this->emissiveColor.z);
 
-    GLuint hasDiffuseMapUniformID = glGetUniformLocation(programID, "hasDiffuseMap");
-    if (this->hasDiffuseTexture) {
-        glUniform1i(hasDiffuseMapUniformID, 1);
-    } else {
-        glUniform1i(hasDiffuseMapUniformID, 0);
-    }
-
-    GLuint hasOpacityMapUniformID = glGetUniformLocation(programID, "hasOpacityMap");
-    if (this->hasOpacityTexture) {
-        glUniform1i(hasOpacityMapUniformID, 1);
-    } else {
-        glUniform1i(hasOpacityMapUniformID, 0);
-    }
-    GLuint hasAmbientMapUniformID = glGetUniformLocation(programID, "hasAmbientMap");
-    if (this->hasAmbientTexture) {
-        glUniform1i(hasAmbientMapUniformID, 1);
-    } else {
-        glUniform1i(hasAmbientMapUniformID, 0);
-    }
-    GLuint hasNormalMapUniformID = glGetUniformLocation(programID, "hasNormalMap");
-    if (this->hasNormalTexture) {
-        glUniform1i(hasNormalMapUniformID, 1);
-    } else {
-        glUniform1i(hasNormalMapUniformID, 0);
-    }
-    GLuint hasSpecularMapUniformID = glGetUniformLocation(programID, "hasSpecularMap");
-    if (this->hasSpecularTexture) {
-        glUniform1i(hasSpecularMapUniformID, 1);
-    } else {
-        glUniform1i(hasSpecularMapUniformID, 0);
+    if (!isLightVolumeMaterial) {
+        GLuint hasDiffuseMapUniformID = glGetUniformLocation(programID, "hasDiffuseMap");
+        if (this->hasDiffuseTexture) {
+            glUniform1i(hasDiffuseMapUniformID, 1);
+        } else {
+            glUniform1i(hasDiffuseMapUniformID, 0);
+        }
+        GLuint hasOpacityMapUniformID = glGetUniformLocation(programID, "hasOpacityMap");
+        if (this->hasOpacityTexture) {
+            glUniform1i(hasOpacityMapUniformID, 1);
+        } else {
+            glUniform1i(hasOpacityMapUniformID, 0);
+        }
+        GLuint hasAmbientMapUniformID = glGetUniformLocation(programID, "hasAmbientMap");
+        if (this->hasAmbientTexture) {
+            glUniform1i(hasAmbientMapUniformID, 1);
+        } else {
+            glUniform1i(hasAmbientMapUniformID, 0);
+        }
+        GLuint hasNormalMapUniformID = glGetUniformLocation(programID, "hasNormalMap");
+        if (this->hasNormalTexture) {
+            glUniform1i(hasNormalMapUniformID, 1);
+        } else {
+            glUniform1i(hasNormalMapUniformID, 0);
+        }
+        GLuint hasSpecularMapUniformID = glGetUniformLocation(programID, "hasSpecularMap");
+        if (this->hasSpecularTexture) {
+            glUniform1i(hasSpecularMapUniformID, 1);
+        } else {
+            glUniform1i(hasSpecularMapUniformID, 0);
+        }
     }
 }
 

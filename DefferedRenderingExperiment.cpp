@@ -22,6 +22,7 @@ DefferedRenderingExperiment::~DefferedRenderingExperiment() {
         if (object)
             delete object;
     }
+    delete pointLightVolume;
     glDeleteTextures(1, &colourTexture);
     glDeleteTextures(1, &normalTexture);
     glDeleteTextures(1, &depthTexture);
@@ -130,19 +131,50 @@ void DefferedRenderingExperiment::render() {
     //**************************** LIGHTING **********************************
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
 
-    //glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
-    //glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    std::cout << "rendering is fine" << std::endl;
 
     //glBlendFunc(GL_ONE, GL_ONE);
     for (AbstractLight* light : sceneLights) {
+        glm::mat4 lightModelMatrix = glm::mat4(1.0);
+        lightModelMatrix = glm::translate(lightModelMatrix, light->getPosition());
+        lightModelMatrix = glm::scale(lightModelMatrix, glm::vec3(light->getRadius(), light->getRadius(), light->getRadius()));
+        pointLightVolume->setModelMatrix(lightModelMatrix);
         float distance = glm::length(light->getPosition() - camera->getPosition());
         if (distance < light->getRadius()) {
             glCullFace(GL_FRONT);
         } else {
             glCullFace(GL_BACK);
         }
-        std::cout << "[" << camera->getPosition().x << "," << camera->getPosition().y << "," << camera->getPosition().z << "] distance " << distance;
-        std::cout << "[" << light->getPosition().x << "," << light->getPosition().y << "," << light->getPosition().z << std::endl;
+        glUseProgram(lightingProgramID);
+        glm::mat4 inverseProjectionViewMatrix = glm::inverse(projectionMatrix * viewMatrix);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colourTexture);
+        glUniform1i(glGetUniformLocation(lightingProgramID, "colour_texture"), 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, normalTexture);
+        glUniform1i(glGetUniformLocation(lightingProgramID, "normal_texture"), 1);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, depthTexture);
+        glUniform1i(glGetUniformLocation(lightingProgramID, "depth_texture"), 0);
+        glUniform2f(glGetUniformLocation(lightingProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
+        glUniform1i(glGetUniformLocation(lightingProgramID, "lightRadius"), light->getRadius());
+        glUniform3f(glGetUniformLocation(lightingProgramID, "lightPos"), light->getPosition().x, light->getPosition().y, light->getPosition().z);
+        glUniform4f(glGetUniformLocation(lightingProgramID, "lightColor"), light->getColor().x, light->getColor().y, light->getColor().z, light->getColor().w);
+        glUniform3f(glGetUniformLocation(lightingProgramID, "cameraPos"), camera->getPosition().x, camera->getPosition().y, camera->getPosition().z);
+        glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "inversedProjectionView"), 1, GL_FALSE, glm::value_ptr(inverseProjectionViewMatrix));
+
+        glm::mat4 modelMatrix = pointLightVolume->getModelMatrix();
+        mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+        normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+        glUniformMatrix3fv(glGetUniformLocation(lightingProgramID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+        pointLightVolume->render(lightingProgramID);
+        glUseProgram(0);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -151,10 +183,16 @@ void DefferedRenderingExperiment::render() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, windowWidth, windowHeight);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-    glUseProgram(quadProgramID);
+    glUseProgram(combineProgramID);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, colourTexture);
-    glUniform1i(glGetUniformLocation(quadProgramID, "uScreenTex"), 0);
+    glUniform1i(glGetUniformLocation(combineProgramID, "diffuseTexture"), 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, emissiveTexture);
+    glUniform1i(glGetUniformLocation(combineProgramID, "emissiveTexture"), 1);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, specularTexture);
+    glUniform1i(glGetUniformLocation(combineProgramID, "specularTexture"), 2);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
@@ -184,17 +222,29 @@ void DefferedRenderingExperiment::initialize() {
     sm->LinkProgramObject("gbuffer");
     std::cout << "GBuffer Program ID is " << (*sm)["gbuffer"]->GetID() << std::endl;
 
-    sm->CreateShaderProgram("quad");
-    sm->AttachShader("quadVertex", VERTEX);
-    sm->AttachShader("quadFragment", FRAGMENT);
-    sm->LoadShaderSource("quadVertex", "shaders/quad.vert.glsl");
-    sm->LoadShaderSource("quadFragment", "shaders/quad.frag.glsl");
-    sm->CompileShader("quadVertex");
-    sm->CompileShader("quadFragment");
-    sm->AttachShaderToProgram("quad", "quadVertex");
-    sm->AttachShaderToProgram("quad", "quadFragment");
-    sm->LinkProgramObject("quad");
-    std::cout << "Quad Program ID is " << (*sm)["quad"]->GetID() << std::endl;
+    sm->CreateShaderProgram("lighting");
+    sm->AttachShader("lightingVertex", VERTEX);
+    sm->AttachShader("lightingFragment", FRAGMENT);
+    sm->LoadShaderSource("lightingVertex", "shaders/lightingpass.vert.glsl");
+    sm->LoadShaderSource("lightingFragment", "shaders/lightingpass.frag.glsl");
+    sm->CompileShader("lightingVertex");
+    sm->CompileShader("lightingFragment");
+    sm->AttachShaderToProgram("lighting", "lightingVertex");
+    sm->AttachShaderToProgram("lighting", "lightingFragment");
+    sm->LinkProgramObject("lighting");
+    std::cout << "Lighting pass Program ID is " << (*sm)["lighting"]->GetID() << std::endl;
+
+    sm->CreateShaderProgram("combine");
+    sm->AttachShader("combineVertex", VERTEX);
+    sm->AttachShader("combineFragment", FRAGMENT);
+    sm->LoadShaderSource("combineVertex", "shaders/gcombine.vert.glsl");
+    sm->LoadShaderSource("combineFragment", "shaders/gcombine.frag.glsl");
+    sm->CompileShader("combineVertex");
+    sm->CompileShader("combineFragment");
+    sm->AttachShaderToProgram("combine", "combineVertex");
+    sm->AttachShaderToProgram("combine", "combineFragment");
+    sm->LinkProgramObject("combine");
+    std::cout << "combine program ID is " << (*sm)["combine"]->GetID() << std::endl;
 
     // First pass stuffs
 
@@ -310,28 +360,39 @@ void DefferedRenderingExperiment::initialize() {
     // Loading scene stuff
 
     ModelLoader modelLoader;
-    SceneObject *sponzaObject = new SceneObject();
-    modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
-    sceneObjects.push_back(sponzaObject);
+    //SceneObject *sponzaObject = new SceneObject();
+    //modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    //sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
     glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
     vehicleObject->setModelMatrix(glm::scale(vehicleObject->getModelMatrix(), glm::vec3(10, 10, 10)));
     sceneObjects.push_back(vehicleObject);
 
+    pointLightVolume = new SceneObject();
+    pointLightVolume->setLightVolumeBool(true);
+    modelLoader.loadSceneModel("models/sphere.obj", pointLightVolume);
+
     // Creating lights
     //PointLight *pointLight0 = PointLight();
     sceneLights.push_back(new PointLight());
-    //PointLight *pointLight1 = PointLight();
-    //sceneLights.push_back(pointLight1);
-    //PointLight *pointLight2 = PointLight();
-    //sceneLights.push_back(pointLight2);
+    sceneLights.push_back(new PointLight());
+    sceneLights.push_back(new PointLight());
+    sceneLights.push_back(new PointLight());
+    sceneLights.push_back(new PointLight());
+    sceneLights.push_back(new PointLight());
+    sceneLights.push_back(new PointLight());
+    sceneLights.push_back(new PointLight());
+
 
 
     glViewport(0, 0, (int) windowWidth, (int) windowHeight);
 
     gbufferProgramID = (*sm)["gbuffer"]->GetID();
-    quadProgramID = (*sm)["quad"]->GetID();
+    lightingProgramID = (*sm)["lighting"]->GetID();
+    combineProgramID = (*sm)["combine"]->GetID();
+
+    std::cout << "initialization is fine" << std::endl;
 
     this->isInitialized = true;
 }
