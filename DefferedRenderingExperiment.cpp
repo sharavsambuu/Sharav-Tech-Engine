@@ -7,7 +7,8 @@
 #include "Common.hpp"
 #include "Gear.hpp"
 #include "GLError.hpp"
-#include <thread>
+#include "PointLight.hpp"
+#include <glm/gtx/norm.hpp> 
 
 DefferedRenderingExperiment::DefferedRenderingExperiment() {
     isEntered = true;
@@ -25,6 +26,9 @@ DefferedRenderingExperiment::~DefferedRenderingExperiment() {
     glDeleteTextures(1, &normalTexture);
     glDeleteTextures(1, &depthTexture);
     glDeleteFramebuffers(1, &gbufferFBO);
+    glDeleteTextures(1, &emissiveTexture);
+    glDeleteTextures(1, &specularTexture);
+    glDeleteFramebuffers(1, &lightingFBO);
     glDeleteBuffers(1, &quadBufferID);
     delete ShaderManager::getSingleton();
 }
@@ -94,10 +98,16 @@ void DefferedRenderingExperiment::update(float deltaTime) {
     this->viewMatrix = camera->getViewMatrix();
     this->projectionMatrix = camera->getProjectionMatrix();
 
+    for (AbstractLight* light : sceneLights) {
+        light->update(deltaTime);
+    }
+    for (AbstractSceneObject* sceneObject : sceneObjects) {
+        sceneObject->update(deltaTime);
+    }
 }
 
 void DefferedRenderingExperiment::render() {
-    //********************* DRAWING SCENE TO THE FBO ***********************
+    //************************** FILL GBUFFER **********************************
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
 
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
@@ -116,17 +126,34 @@ void DefferedRenderingExperiment::render() {
         glUseProgram(0);
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //******************** END OF THE DRAWING SCENE ************************
 
-    glEnable(GL_DEPTH_TEST);
+    //**************************** LIGHTING **********************************
+    glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
 
-    // TO PRESENT PROCESSED FRAME TO THE SCREEN
+    //glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
+    //glClear(GL_COLOR_BUFFER_BIT);
+
+    //glBlendFunc(GL_ONE, GL_ONE);
+    for (AbstractLight* light : sceneLights) {
+        float distance = glm::length(light->getPosition() - camera->getPosition());
+        if (distance < light->getRadius()) {
+            glCullFace(GL_FRONT);
+        } else {
+            glCullFace(GL_BACK);
+        }
+        std::cout << "[" << camera->getPosition().x << "," << camera->getPosition().y << "," << camera->getPosition().z << "] distance " << distance;
+        std::cout << "[" << light->getPosition().x << "," << light->getPosition().y << "," << light->getPosition().z << std::endl;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    //************************* PRESENTING FRAME *******************************
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, windowWidth, windowHeight);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     glUseProgram(quadProgramID);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glBindTexture(GL_TEXTURE_2D, colourTexture);
     glUniform1i(glGetUniformLocation(quadProgramID, "uScreenTex"), 0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
@@ -169,7 +196,7 @@ void DefferedRenderingExperiment::initialize() {
     sm->LinkProgramObject("quad");
     std::cout << "Quad Program ID is " << (*sm)["quad"]->GetID() << std::endl;
 
-    // let's create some textures needed for G-Buffer
+    // First pass stuffs
 
     glGenTextures(1, &colourTexture);
     glBindTexture(GL_TEXTURE_2D, colourTexture);
@@ -208,18 +235,56 @@ void DefferedRenderingExperiment::initialize() {
     glDrawBuffers(2, buffers);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << ">>>>> cannot create a framebuffer object" << std::endl;
+        std::cout << ">>>>> cannot create a framebuffer object for the gbuffer" << std::endl;
         check_gl_error();
         Gear::getSingleton()->exit();
         isInitialized = false;
         return;
     } else {
-        std::cout << "it seems like FBO is created and it's good to go" << std::endl;
+        std::cout << "it seems like FBO is created for gbuffer and it's good to go" << std::endl;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Second pass stuffs
+
+    glGenTextures(1, &emissiveTexture);
+    glBindTexture(GL_TEXTURE_2D, emissiveTexture);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    glGenTextures(1, &specularTexture);
+    glBindTexture(GL_TEXTURE_2D, specularTexture);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    glGenFramebuffers(1, &lightingFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, emissiveTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, specularTexture, 0);
+
+    glDrawBuffers(2, buffers);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << ">>>>> cannot create a framebuffer object for the lighting" << std::endl;
+        check_gl_error();
+        Gear::getSingleton()->exit();
+        isInitialized = false;
+        return;
+    } else {
+        std::cout << "it seems like FBO is created for the lighting and it's good to go" << std::endl;
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // screen aligned quads
+
     const GLfloat quadVertices[] = {
         -1.0f, -1.0f, 0.0f,
         1.0f, -1.0f, 0.0f,
@@ -242,6 +307,8 @@ void DefferedRenderingExperiment::initialize() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // Loading scene stuff
+
     ModelLoader modelLoader;
     SceneObject *sponzaObject = new SceneObject();
     modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
@@ -250,9 +317,16 @@ void DefferedRenderingExperiment::initialize() {
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
     glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
     vehicleObject->setModelMatrix(glm::scale(vehicleObject->getModelMatrix(), glm::vec3(10, 10, 10)));
-    this->sceneObjects.push_back(vehicleObject);
+    sceneObjects.push_back(vehicleObject);
 
-    ////////////////////////////////////////////////////////////////////////////
+    // Creating lights
+    //PointLight *pointLight0 = PointLight();
+    sceneLights.push_back(new PointLight());
+    //PointLight *pointLight1 = PointLight();
+    //sceneLights.push_back(pointLight1);
+    //PointLight *pointLight2 = PointLight();
+    //sceneLights.push_back(pointLight2);
+
 
     glViewport(0, 0, (int) windowWidth, (int) windowHeight);
 

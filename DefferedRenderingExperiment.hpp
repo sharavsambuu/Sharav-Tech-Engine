@@ -21,6 +21,7 @@
 #include "SceneObject.hpp"
 #include "ModelLoader.hpp"
 #include "AbstractSceneObject.hpp"
+#include "AbstractLight.hpp"
 #include <vector>
 
 class DefferedRenderingExperiment : public AbstractState {
@@ -39,6 +40,7 @@ public:
     bool isInitializationDone();
 private:
     std::vector<AbstractSceneObject *> sceneObjects;
+    std::vector<AbstractLight *> sceneLights;
     Camera* camera;
     
     bool isEntered;
@@ -62,11 +64,15 @@ private:
 
     GLuint gbufferProgramID;
     GLuint quadProgramID;
-
+    // first pass
     GLuint gbufferFBO; // G-Buffer
     GLuint colourTexture; // albedo
     GLuint normalTexture; // normal
     GLuint depthTexture; // depth
+    // second pass
+    GLuint lightingFBO; // point lighting
+    GLuint emissiveTexture; // emissive lighting information
+    GLuint specularTexture; // specular lighting information
 
     GLuint quadBufferID;
 
