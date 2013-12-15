@@ -9,11 +9,14 @@ out vec2 vTexcoord;
 out vec3 vPosition; // view-space
 out vec3 vNormal;   // view-space
 out vec3 vEyeDir;   // view-space
+out vec4 vLightPosition;
 
 uniform mat4 mvpMatrix;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat3 normalMatrix;
+
+uniform vec3 lightPos;
 
 void main(void)
 {
@@ -33,5 +36,7 @@ void main(void)
     
     vec3 posInEyespace = (viewMatrix * modelMatrix * in_position).xyz;
     vEyeDir = vec3(0,0,0) - posInEyespace;
+
+    vLightPosition = viewMatrix * vec4(lightPos, 1.0);
 
 }

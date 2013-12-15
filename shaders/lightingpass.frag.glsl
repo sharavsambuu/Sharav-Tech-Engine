@@ -9,45 +9,55 @@ uniform vec3      meterial_emissive_color;
 uniform sampler2D colour_texture;
 uniform sampler2D normal_texture;
 uniform sampler2D depth_texture;
+
 uniform vec2 pixelSize;
-uniform float lightRadius;
-uniform vec3 lightPos;
 uniform vec4 lightColor;
-uniform mat4 inversedProjectionView;
+uniform float lightRadius;
+uniform mat4 inverseProjection;
 uniform vec3 cameraPos;
+uniform vec2 screen_dimension;
 
 in vec2 vTexcoord;
 in vec3 vPosition; // view-space
 in vec3 vNormal;   // view-space
 in vec3 vEyeDir;   // view-space
+in vec4 vLightPosition; // light position in view-space
 
-out vec4 outColor[2];
+out vec4 out_color1;
+out vec4 out_color2;
 
 void main(void)
 {
-    vec3 pos = vec3((gl_FragCoord.x * pixelSize.x), 
-                    (gl_FragCoord.y * pixelSize.y), 
-                    0.0);
-    pos.z = texture(depth_texture, pos.xy).r;
-    vec3 normal = normalize(texture(normal_texture, pos.xy).xyz * 2.0 - 1.0);
-    vec4 clip = inversedProjectionView * vec4(pos * 2.0 - 1.0, 1.0);
-    pos = clip.xyz / clip.w;
-
-    float dist = length(lightPos - pos);
-    float attenuation = 1.0 - clamp(dist/lightRadius, 0.0, 1.0);
-
-    if (attenuation==0.0) {
-        discard;
-    }
+    vec2 texCoord = vec2(gl_FragCoord.x, gl_FragCoord.y)/screen_dimension;
     
-    vec3 incident = normalize(lightPos - pos);
-    vec3 viewDir = normalize(cameraPos - pos);
-    vec3 halfDir = normalize(incident + viewDir);
+    float depth = texture2D(depth_texture, texCoord);
+    vec4 screenPosition = vec4(
+        texCoord.x,
+        texCoord.y,
+        depth,
+        1.0
+    ) * 2.0 - 1.0;
+    vec4 positionInView = inverseProjection * screenPosition;    
+    positionInView = positionInView / positionInView.w; // surface position in view-space
+    vec3 normal = normalize(texture2D(normal_texture, texCoord).xyz); // normal in view-space
 
-    float lambert = clamp(dot(incident, normal), 0.0, 1.0);
+    float distance = length(vLightPosition - positionInView);
+    float attenuation = 1.0 - clamp(distance / lightRadius, 0.0, 1.0);
+//    if (attenuation == 0.0)
+//        discard;
+
+    vec3 incidentDir = normalize((vLightPosition - positionInView).xyz);
+    vec3 viewDir = normalize(vEyeDir);
+    vec3 halfDir = normalize(incidentDir + viewDir);
+    
+    float lambert = clamp(dot(incidentDir, normal), 0.0, 1.0);
     float rFactor = clamp(dot(halfDir, normal), 0.0, 1.0);
     float sFactor = pow(rFactor, 33.0);
-    
-    outColor[0] = vec4(lightColor.xyz * lambert * attenuation, 1.0);
-    outColor[1] = vec4(lightColor.xyz * sFactor * attenuation * 0.33, 1.0);
+
+
+    //out_color1 = vec4(texture2D(colour_texture, texCoord).xyz * lightColor.xyz * lambert * attenuation, 1.0);
+    //out_color1 = vec4(texture2D(colour_texture, texCoord).xyz, 1.0);
+    //out_color2 = vec4(lightColor.xyz * sFactor * attenuation * 0.33, 1.0);
+    out_color1 = vec4(texture2D(colour_texture, texCoord).xyz * lightColor.xyz * lambert, 1.0);
+    out_color2 = vec4(texture2D(colour_texture, texCoord).xyz * lightColor.xyz * sFactor * 0.33, 1.0);
 }

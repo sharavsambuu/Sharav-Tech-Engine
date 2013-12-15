@@ -96,8 +96,8 @@ void ModelLoader::processMesh(aiMesh* mesh, SceneObject *object) {
 
 void ModelLoader::processMaterial(aiMaterial* material, int index, SceneObject *object) {
     MaterialManager *mm = object->mm;
-    std::cout << "================ ID " << index << "====================" << std::endl;
-
+    std::cout << "<<<<< Material ID " << index << std::endl;
+    
     aiString materialName;
 
     // Get the name for managing purpose
@@ -115,22 +115,22 @@ void ModelLoader::processMaterial(aiMaterial* material, int index, SceneObject *
 
     // Get diffuse color
     if (material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) != AI_SUCCESS) {
-        std::cout << "ERROR: Could not get diffuse color for Material " << materialName.data << std::endl;
+        //std::cout << "ERROR: Could not get diffuse color for Material " << materialName.data << std::endl;
     }
 
     // Get ambient color
     if (material->Get(AI_MATKEY_COLOR_AMBIENT, ambientColor) != AI_SUCCESS) {
-        std::cout << "ERROR: Could not get ambient color for Material " << materialName.data << std::endl;
+        //std::cout << "ERROR: Could not get ambient color for Material " << materialName.data << std::endl;
     }
 
     // Get diffuse color
     if (material->Get(AI_MATKEY_COLOR_SPECULAR, specularColor) != AI_SUCCESS) {
-        std::cout << "ERROR: Could not get specular color for Material " << materialName.data << std::endl;
+        //std::cout << "ERROR: Could not get specular color for Material " << materialName.data << std::endl;
     }
 
     // Get opacity
     if (material->Get(AI_MATKEY_OPACITY, opacity) != AI_SUCCESS) {
-        std::cout << "ERROR: Could not get opacity for Material " << materialName.data << std::endl;
+        //std::cout << "ERROR: Could not get opacity for Material " << materialName.data << std::endl;
     }
 
     // Get emissive color
@@ -139,16 +139,14 @@ void ModelLoader::processMaterial(aiMaterial* material, int index, SceneObject *
 
     // Get shininess
     if (material->Get(AI_MATKEY_SHININESS, shininess) != AI_SUCCESS) {
-        std::cout << "ERROR: Could not get Shininess for Material " << materialName.data << std::endl;
+        //std::cout << "ERROR: Could not get Shininess for Material " << materialName.data << std::endl;
     }
 
-
     // material color parameters
-    std::cout << "diffuse color [" << diffuseColor.r << "," << diffuseColor.g << "," << diffuseColor.b << "] opacity=" << opacity << std::endl;
-    std::cout << "ambient color [" << ambientColor.r << "," << ambientColor.g << "," << ambientColor.b << "]" << std::endl;
-    std::cout << "specular color [" << specularColor.r << "," << specularColor.g << "," << specularColor.b << "]" << std::endl;
-    std::cout << "emissive color [" << emissiveColor.r << "," << emissiveColor.g << "," << emissiveColor.b << "]" << std::endl;
-
+    //std::cout << "diffuse color [" << diffuseColor.r << "," << diffuseColor.g << "," << diffuseColor.b << "] opacity=" << opacity << std::endl;
+    //std::cout << "ambient color [" << ambientColor.r << "," << ambientColor.g << "," << ambientColor.b << "]" << std::endl;
+    //std::cout << "specular color [" << specularColor.r << "," << specularColor.g << "," << specularColor.b << "]" << std::endl;
+    //std::cout << "emissive color [" << emissiveColor.r << "," << emissiveColor.g << "," << emissiveColor.b << "]" << std::endl;
 
     Material *m = mm->createMaterial(std::string(materialName.data), index);
     m->setDiffuseColor(glm::vec4(diffuseColor.r, diffuseColor.g, diffuseColor.b, opacity));
@@ -159,62 +157,62 @@ void ModelLoader::processMaterial(aiMaterial* material, int index, SceneObject *
     // diffuse map
     if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
         if (material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseTexturePath) != AI_SUCCESS) {
-            std::cout << "ERROR: Could not get Diffuse Texture for Material " << materialName.data << std::endl;
+            //std::cout << "ERROR: Could not get Diffuse Texture for Material " << materialName.data << std::endl;
             return;
         }
         m->hasDiffuseTexture = true;
         m->loadDiffuseTexture(diffuseTexturePath.data);
-        std::cout << "diffuse texture path " << diffuseTexturePath.data << std::endl;
+        //std::cout << "diffuse texture path " << diffuseTexturePath.data << std::endl;
     }
 
     // normal map
     if (material->GetTextureCount(aiTextureType_HEIGHT) > 0) {
         if (material->Get(AI_MATKEY_TEXTURE(aiTextureType_HEIGHT, 0), normalMapTexturePath) != AI_SUCCESS) {
-            std::cout << "ERROR: Could not get Height Map Texture for Material " << materialName.data << std::endl;
+            //std::cout << "ERROR: Could not get Height Map Texture for Material " << materialName.data << std::endl;
             return;
         }
         m->hasNormalTexture = true;
         m->loadNormalTexture(normalMapTexturePath.data);
-        std::cout << "height map texture path " << normalMapTexturePath.data << std::endl;
+        //std::cout << "height map texture path " << normalMapTexturePath.data << std::endl;
     }
 
     // specular map
     if (material->GetTextureCount(aiTextureType_SPECULAR) > 0) {
         if (material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), specularTexturePath) != AI_SUCCESS) {
-            std::cout << "ERROR: Could not get Mask Texture for Material " << materialName.data << std::endl;
+            //std::cout << "ERROR: Could not get Mask Texture for Material " << materialName.data << std::endl;
             return;
         }
         m->hasSpecularTexture = true;
         m->loadSpecularTexture(specularTexturePath.data);
-        std::cout << "specular texture path " << specularTexturePath.data << std::endl;
+        //std::cout << "specular texture path " << specularTexturePath.data << std::endl;
     } else {
-        std::cout << "there is no specular texture at ID=" << index << std::endl;
+        //std::cout << "there is no specular texture at ID=" << index << std::endl;
     }
 
     // ambient map
     if (material->GetTextureCount(aiTextureType_AMBIENT) > 0) {
         if (material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), ambientTexturePath) != AI_SUCCESS) {
-            std::cout << "ERROR: Could not get Ambient Texture for Material " << materialName.data << std::endl;
+            //std::cout << "ERROR: Could not get Ambient Texture for Material " << materialName.data << std::endl;
             return;
         }
         m->hasAmbientTexture = true;
         m->loadAmbientTexture(ambientTexturePath.data);
-        std::cout << "ambient texture path " << ambientTexturePath.data << std::endl;
+        //std::cout << "ambient texture path " << ambientTexturePath.data << std::endl;
     } else {
-        std::cout << ":( THERE IS NO AMBIENT MAP" << std::endl;
+        //std::cout << ":( THERE IS NO AMBIENT MAP" << std::endl;
     }
     // opacity map
     if (material->GetTextureCount(aiTextureType_OPACITY) > 0) {
         if (material->Get(AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0), opacityTexturePath) != AI_SUCCESS) {
-            std::cout << "ERROR: Couldn't get opacity texture for material" << materialName.data << std::endl;
+            //std::cout << "ERROR: Couldn't get opacity texture for material" << materialName.data << std::endl;
             return;
         }
         m->hasOpacityTexture = true;
         m->loadOpacityTexture(opacityTexturePath.data);
-        std::cout << "opacity texture path" << opacityTexturePath.data << std::endl;
+        //std::cout << "opacity texture path" << opacityTexturePath.data << std::endl;
     } else {
-        std::cout << ":( THERE IS NO OPACITY MAP" << std::endl;
+        //std::cout << ":( THERE IS NO OPACITY MAP" << std::endl;
     }
-    std::cout << "==========================================" << std::endl;
+    //std::cout << "==========================================" << std::endl;
 }
 
