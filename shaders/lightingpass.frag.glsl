@@ -32,8 +32,7 @@ void main(void)
     
     float depth = texture2D(depth_texture, texCoord);
     vec4 screenPosition = vec4(
-        texCoord.x,
-        texCoord.y,
+        texCoord,
         depth,
         1.0
     ) * 2.0 - 1.0;
@@ -43,8 +42,9 @@ void main(void)
 
     float distance = length(vLightPosition - positionInView);
     float attenuation = 1.0 - clamp(distance / lightRadius, 0.0, 1.0);
-//    if (attenuation == 0.0)
-//        discard;
+    //if (attenuation == 0.0)
+    //    discard;
+    attenuation = 1.0;
 
     vec3 incidentDir = normalize((vLightPosition - positionInView).xyz);
     vec3 viewDir = normalize(vEyeDir);
@@ -54,10 +54,8 @@ void main(void)
     float rFactor = clamp(dot(halfDir, normal), 0.0, 1.0);
     float sFactor = pow(rFactor, 33.0);
 
-
-    //out_color1 = vec4(texture2D(colour_texture, texCoord).xyz * lightColor.xyz * lambert * attenuation, 1.0);
-    //out_color1 = vec4(texture2D(colour_texture, texCoord).xyz, 1.0);
-    //out_color2 = vec4(lightColor.xyz * sFactor * attenuation * 0.33, 1.0);
-    out_color1 = vec4(texture2D(colour_texture, texCoord).xyz * lightColor.xyz * lambert, 1.0);
-    out_color2 = vec4(texture2D(colour_texture, texCoord).xyz * lightColor.xyz * sFactor * 0.33, 1.0);
+    
+    out_color1 = vec4(lightColor.xyz * lambert * attenuation, 1.0);
+    out_color2 = vec4(lightColor.xyz * sFactor * attenuation * 0.33, 1.0);
+    
 }

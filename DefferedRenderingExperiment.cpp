@@ -112,7 +112,7 @@ void DefferedRenderingExperiment::render() {
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
 
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (AbstractSceneObject* sceneObject : sceneObjects) {
         glUseProgram(gbufferProgramID);
@@ -140,11 +140,11 @@ void DefferedRenderingExperiment::render() {
         lightModelMatrix = glm::scale(lightModelMatrix, glm::vec3(light->getRadius(), light->getRadius(), light->getRadius()));
         pointLightVolume->setModelMatrix(lightModelMatrix);
         float distance = glm::length(light->getPosition() - camera->getPosition());
-        /*if (distance < light->getRadius()) {
+        if (distance < light->getRadius()) {
             glCullFace(GL_FRONT);
         } else {
             glCullFace(GL_BACK);
-        }*/
+        }
         glUseProgram(lightingProgramID);
         glm::mat4 inverseProjectionMatrix = glm::inverse(projectionMatrix);
         glActiveTexture(GL_TEXTURE0);
@@ -177,7 +177,7 @@ void DefferedRenderingExperiment::render() {
 
     glCullFace(GL_BACK);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -186,6 +186,7 @@ void DefferedRenderingExperiment::render() {
     glViewport(0, 0, windowWidth, windowHeight);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     glUseProgram(combineProgramID);
+    
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, colourTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "diffuseTexture"), 0);
@@ -195,6 +196,7 @@ void DefferedRenderingExperiment::render() {
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, specularTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "specularTexture"), 2);
+    
     glUniform2f(glGetUniformLocation(combineProgramID, "screen_dimension"), windowWidth, windowHeight);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
