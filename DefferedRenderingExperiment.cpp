@@ -365,9 +365,9 @@ void DefferedRenderingExperiment::initialize() {
     // Loading scene stuff
 
     ModelLoader modelLoader;
-    //SceneObject *sponzaObject = new SceneObject();
-    //modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
-    //sceneObjects.push_back(sponzaObject);
+    SceneObject *sponzaObject = new SceneObject();
+    modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
     glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
@@ -380,22 +380,9 @@ void DefferedRenderingExperiment::initialize() {
 
     // Creating lights
     //PointLight *pointLight0 = PointLight();
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
-    sceneLights.push_back(new PointLight());
+    for (int i=0; i<50; i++)
+        sceneLights.push_back(new PointLight());
+    
 
 
 

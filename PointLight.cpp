@@ -4,7 +4,8 @@
 
 PointLight::PointLight() {
     this->position = glm::vec3(0.0, 0.0, 0.0);
-    this->color = glm::vec4(1.0, 1.0, 1.0, 1.0);
+    //this->color = glm::vec4(1.0, 1.0, 1.0, 1.0);
+    this->color = glm::vec4(glm::linearRand(glm::vec3(0.1,0.1,0.1), glm::vec3(1.0, 1.0, 1.0)), 1.0);
     this->radius = 50.0f;
     this->moveSpeed = 2.0f;
     this->maxBoundaries = glm::vec3(500.0, 500.0, 500.0);
