@@ -51,9 +51,7 @@ void main(void)
     attenuation = 1.0 / (constant + linear*distance + quadric*distance*distance);
     if (attenuation < 0.2)
         discard;
-    //attenuation = 1.0;
     
-
     vec3 incidentDir = normalize(vLightPosition.xyz - positionInView.xyz);
     vec3 viewDir = normalize(vEyeDir);
     vec3 halfDir = normalize(incidentDir + viewDir);
@@ -62,13 +60,7 @@ void main(void)
     float rFactor = clamp(dot(halfDir, normal), 0.0, 1.0);
     float sFactor = pow(rFactor, 33.0);
 
-    /*float z = positionInView.z;
-    if (z < 50 || z>150) {
-        out_color1 = vec4(1.0, 0.5, 0.5, 1.0);
-        out_color2 = vec4(0.5, 1.0, 0.5, 1.0);
-    } else {*/
-        out_color1 = vec4(lightColor.xyz * lambert * attenuation, 1.0);
-        out_color2 = vec4(lightColor.xyz * sFactor * attenuation * 0.33, 1.0);
-    //}
-
+    out_color1 = vec4(lightColor.xyz * lambert * attenuation, 1.0);
+    out_color2 = vec4(lightColor.xyz * sFactor * attenuation * 0.33, 1.0);
+    
 }

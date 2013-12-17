@@ -130,6 +130,7 @@ void DefferedRenderingExperiment::render() {
 
     //**************************** LIGHTING **********************************
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
+    glEnable(GL_STENCIL_TEST);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -174,7 +175,7 @@ void DefferedRenderingExperiment::render() {
         pointLightVolume->render(lightingProgramID);
         glUseProgram(0);
     }
-
+    glDisable(GL_STENCIL_TEST);
     glCullFace(GL_BACK);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
@@ -275,13 +276,14 @@ void DefferedRenderingExperiment::initialize() {
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, windowWidth, windowHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 
     glGenFramebuffers(1, &gbufferFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normalTexture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
 
     GLenum buffers[2];
     buffers[0] = GL_COLOR_ATTACHMENT0;
@@ -365,9 +367,9 @@ void DefferedRenderingExperiment::initialize() {
     // Loading scene stuff
 
     ModelLoader modelLoader;
-    SceneObject *sponzaObject = new SceneObject();
-    modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
-    sceneObjects.push_back(sponzaObject);
+    //SceneObject *sponzaObject = new SceneObject();
+    //modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    //sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
     glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
