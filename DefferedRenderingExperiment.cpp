@@ -110,10 +110,9 @@ void DefferedRenderingExperiment::update(float deltaTime) {
 void DefferedRenderingExperiment::render() {
     //************************** FILL GBUFFER **********************************
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
-
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    glEnable(GL_DEPTH_TEST);
     for (AbstractSceneObject* sceneObject : sceneObjects) {
         glUseProgram(gbufferProgramID);
         glm::mat4 modelMatrix = sceneObject->getModelMatrix();
@@ -126,16 +125,45 @@ void DefferedRenderingExperiment::render() {
         sceneObject->render(gbufferProgramID);
         glUseProgram(0);
     }
+    
+    //**************************** STENCIL *************************************
+    for (AbstractLight* light : sceneLights) {
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_STENCIL_TEST);
+        glDrawBuffer(GL_NONE);
+        glDisable(GL_CULL_FACE);
+        glClear(GL_STENCIL_BUFFER_BIT);
+        glStencilFunc(GL_ALWAYS, 0, 0);
+        glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
+        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
+        glUseProgram(nullProgramID);
+        glm::mat4 lightModelMatrix = glm::mat4(1.0);
+        lightModelMatrix = glm::translate(lightModelMatrix, light->getPosition());
+        lightModelMatrix = glm::scale(lightModelMatrix, glm::vec3(light->getRadius(), light->getRadius(), light->getRadius()));
+        pointLightVolume->setModelMatrix(lightModelMatrix);
+        glm::mat4 modelMatrix = pointLightVolume->getModelMatrix();
+        mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+        glUniformMatrix4fv(glGetUniformLocation(nullProgramID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+        pointLightVolume->render(lightingProgramID);
+        glUseProgram(0);
+        glDisable(GL_STENCIL_TEST);
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    //**************************** LIGHTING **********************************
+    //**************************** LIGHTING ************************************
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
-    glEnable(GL_STENCIL_TEST);
-
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    glBlendFunc(GL_ONE, GL_ONE);
     for (AbstractLight* light : sceneLights) {
+        glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+
         glm::mat4 lightModelMatrix = glm::mat4(1.0);
         lightModelMatrix = glm::translate(lightModelMatrix, light->getPosition());
         lightModelMatrix = glm::scale(lightModelMatrix, glm::vec3(light->getRadius(), light->getRadius(), light->getRadius()));
@@ -147,6 +175,7 @@ void DefferedRenderingExperiment::render() {
             glCullFace(GL_BACK);
         }
         glUseProgram(lightingProgramID);
+
         glm::mat4 inverseProjectionMatrix = glm::inverse(projectionMatrix);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, colourTexture);
@@ -173,9 +202,13 @@ void DefferedRenderingExperiment::render() {
         glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
         glUniformMatrix3fv(glGetUniformLocation(lightingProgramID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
         pointLightVolume->render(lightingProgramID);
+
+        glCullFace(GL_BACK);
+        glDisable(GL_BLEND);
+
         glUseProgram(0);
     }
-    glDisable(GL_STENCIL_TEST);
+    glEnable(GL_DEPTH_TEST);
     glCullFace(GL_BACK);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
@@ -187,7 +220,7 @@ void DefferedRenderingExperiment::render() {
     glViewport(0, 0, windowWidth, windowHeight);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     glUseProgram(combineProgramID);
-    
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, colourTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "diffuseTexture"), 0);
@@ -197,7 +230,7 @@ void DefferedRenderingExperiment::render() {
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, specularTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "specularTexture"), 2);
-    
+
     glUniform2f(glGetUniformLocation(combineProgramID, "screen_dimension"), windowWidth, windowHeight);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
@@ -251,6 +284,18 @@ void DefferedRenderingExperiment::initialize() {
     sm->AttachShaderToProgram("combine", "combineFragment");
     sm->LinkProgramObject("combine");
     std::cout << "combine program ID is " << (*sm)["combine"]->GetID() << std::endl;
+
+    sm->CreateShaderProgram("null");
+    sm->AttachShader("nullVertex", VERTEX);
+    sm->AttachShader("nullFragment", FRAGMENT);
+    sm->LoadShaderSource("nullVertex", "shaders/null.vert.glsl");
+    sm->LoadShaderSource("nullFragment", "shaders/null.frag.glsl");
+    sm->CompileShader("nullVertex");
+    sm->CompileShader("nullFragment");
+    sm->AttachShaderToProgram("null", "nullVertex");
+    sm->AttachShaderToProgram("null", "nullFragment");
+    sm->LinkProgramObject("null");
+    std::cout << "null program ID is " << (*sm)["null"]->GetID() << std::endl;
 
     // First pass stuffs
 
@@ -381,18 +426,15 @@ void DefferedRenderingExperiment::initialize() {
     modelLoader.loadSceneModel("models/sphere.obj", pointLightVolume);
 
     // Creating lights
-    //PointLight *pointLight0 = PointLight();
-    for (int i=0; i<50; i++)
+    for (int i = 0; i < 50; i++)
         sceneLights.push_back(new PointLight());
-    
-
-
 
     glViewport(0, 0, (int) windowWidth, (int) windowHeight);
 
     gbufferProgramID = (*sm)["gbuffer"]->GetID();
     lightingProgramID = (*sm)["lighting"]->GetID();
     combineProgramID = (*sm)["combine"]->GetID();
+    nullProgramID = (*sm)["null"]->GetID();
 
     this->isInitialized = true;
 }

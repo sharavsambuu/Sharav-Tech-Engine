@@ -23,5 +23,5 @@ void main(void)
     out_color.a = 1.0;
     
     // debugging
-    //out_color = texture2D(diffuseTexture, texCoord) + texture2D(emissiveTexture, texCoord) + texture2D(specularTexture, texCoord);
+    //out_color = texture2D(specularTexture, texCoord);// + texture2D(emissiveTexture, texCoord) + texture2D(specularTexture, texCoord);
 }

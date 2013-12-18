@@ -66,6 +66,8 @@ private:
     GLuint gbufferProgramID;
     GLuint lightingProgramID;
     GLuint combineProgramID;
+    GLuint nullProgramID;
+    
     // first pass
     GLuint gbufferFBO; // G-Buffer
     GLuint colourTexture; // albedo
