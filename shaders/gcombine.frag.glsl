@@ -3,6 +3,7 @@
 uniform sampler2D diffuseTexture;
 uniform sampler2D emissiveTexture;
 uniform sampler2D specularTexture;
+uniform sampler2D positionTexture;
 
 uniform vec2 screen_dimension;
 
@@ -24,4 +25,5 @@ void main(void)
     
     // debugging
     //out_color = texture2D(specularTexture, texCoord);// + texture2D(emissiveTexture, texCoord) + texture2D(specularTexture, texCoord);
+    out_color = texture2D(positionTexture, texCoord);
 }

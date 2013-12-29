@@ -17,12 +17,13 @@ uniform int hasNormalMap;
 uniform int hasSpecularMap;
 
 in vec2 vTexcoord;
-in vec3 vPosition; // world-space, view-space
-in vec3 vNormal;   // view-space
-in vec3 vEyeDir;   // view-space
+in vec3 vPosition; // world-space
+in vec3 vNormal;   
+in vec3 vEyeDir;   
 
 out vec4 out_color;
 out vec4 out_normal;
+out vec4 out_position;
 
 void main(void)
 {
@@ -53,9 +54,11 @@ void main(void)
         else {
             out_color = diffuseColor;
             out_normal = vec4(normal, 1.0);
+            out_position = vec4(vPosition, 0.0);
         }
     } else {
         out_color = diffuseColor;
         out_normal = vec4(normal, 1.0);
+        out_position = vec4(vPosition, 0.0);
     }
 }

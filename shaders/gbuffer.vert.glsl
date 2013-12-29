@@ -20,10 +20,29 @@ uniform int hasNormalMap;
 void main(void)
 {
     gl_Position = mvpMatrix * in_position;
-    
+/*    
     vTexcoord = in_texcoord;
     
     vPosition = (viewMatrix * modelMatrix * in_position).xyz;
+    
+    vNormal = (normalMatrix * in_normal).xyz;
+    
+    vec3 tbnNormal    = normalize(vNormal);
+    vec3 tbnTangent   = normalize(normalMatrix * in_tangent);
+    //vec3 tbnBitangent = normalize(normalMatrix * in_bitangent);
+    vec3 tbnBitangent  = normalize(cross(tbnNormal, tbnTangent));
+    mat3 tbnMatrix = transpose(mat3(tbnTangent, tbnBitangent, tbnNormal));
+    
+    vec3 posInEyespace = (viewMatrix * modelMatrix * in_position).xyz;
+    vEyeDir = vec3(0,0,0) - posInEyespace;
+
+    if (hasNormalMap==1) {
+        vNormal = normalize(tbnMatrix * in_normal);
+    }
+*/
+    vTexcoord = in_texcoord;
+    
+    vPosition = (modelMatrix * in_position).xyz;
     
     vNormal = (normalMatrix * in_normal).xyz;
     

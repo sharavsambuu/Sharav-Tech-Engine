@@ -73,6 +73,7 @@ private:
     GLuint colourTexture; // albedo
     GLuint normalTexture; // normal
     GLuint depthTexture; // depth
+    GLuint positionTexture; // position
     // second pass
     GLuint lightingFBO; // point lighting
     GLuint emissiveTexture; // emissive lighting information

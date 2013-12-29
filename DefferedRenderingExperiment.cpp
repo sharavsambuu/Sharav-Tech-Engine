@@ -26,6 +26,7 @@ DefferedRenderingExperiment::~DefferedRenderingExperiment() {
     glDeleteTextures(1, &colourTexture);
     glDeleteTextures(1, &normalTexture);
     glDeleteTextures(1, &depthTexture);
+    glDeleteTextures(1, &positionTexture);
     glDeleteFramebuffers(1, &gbufferFBO);
     glDeleteTextures(1, &emissiveTexture);
     glDeleteTextures(1, &specularTexture);
@@ -117,7 +118,8 @@ void DefferedRenderingExperiment::render() {
         glUseProgram(gbufferProgramID);
         glm::mat4 modelMatrix = sceneObject->getModelMatrix();
         mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
-        normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
+        //normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
+        normalMatrix = glm::inverseTranspose(glm::mat3(modelMatrix));
         glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
         glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
         glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
@@ -127,7 +129,7 @@ void DefferedRenderingExperiment::render() {
     }
     
     //**************************** STENCIL *************************************
-    for (AbstractLight* light : sceneLights) {
+/*for (AbstractLight* light : sceneLights) {
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_STENCIL_TEST);
         glDrawBuffer(GL_NONE);
@@ -149,7 +151,7 @@ void DefferedRenderingExperiment::render() {
         glDisable(GL_STENCIL_TEST);
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+*/
     //**************************** LIGHTING ************************************
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
@@ -230,6 +232,10 @@ void DefferedRenderingExperiment::render() {
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, specularTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "specularTexture"), 2);
+    glActiveTexture(GL_TEXTURE3);
+    //glBindTexture(GL_TEXTURE_2D, positionTexture);
+    glBindTexture(GL_TEXTURE_2D, normalTexture);
+    glUniform1i(glGetUniformLocation(combineProgramID, "positionTexture"), 3);
 
     glUniform2f(glGetUniformLocation(combineProgramID, "screen_dimension"), windowWidth, windowHeight);
     glEnableVertexAttribArray(0);
@@ -314,7 +320,15 @@ void DefferedRenderingExperiment::initialize() {
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
+    
+    glGenTextures(1, &positionTexture);
+    glBindTexture(GL_TEXTURE_2D, positionTexture);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    
     glGenTextures(1, &depthTexture);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -327,14 +341,16 @@ void DefferedRenderingExperiment::initialize() {
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normalTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, positionTexture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
 
-    GLenum buffers[2];
+    GLenum buffers[3];
     buffers[0] = GL_COLOR_ATTACHMENT0;
     buffers[1] = GL_COLOR_ATTACHMENT1;
+    buffers[2] = GL_COLOR_ATTACHMENT2;
 
-    glDrawBuffers(2, buffers);
+    glDrawBuffers(3, buffers);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << ">>>>> cannot create a framebuffer object for the gbuffer" << std::endl;
@@ -370,8 +386,11 @@ void DefferedRenderingExperiment::initialize() {
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, emissiveTexture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, specularTexture, 0);
-
-    glDrawBuffers(2, buffers);
+    
+    GLenum lightingBuffers[2];
+    lightingBuffers[0] = GL_COLOR_ATTACHMENT0;
+    lightingBuffers[1] = GL_COLOR_ATTACHMENT1;
+    glDrawBuffers(2, lightingBuffers);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << ">>>>> cannot create a framebuffer object for the lighting" << std::endl;
@@ -412,9 +431,9 @@ void DefferedRenderingExperiment::initialize() {
     // Loading scene stuff
 
     ModelLoader modelLoader;
-    //SceneObject *sponzaObject = new SceneObject();
-    //modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
-    //sceneObjects.push_back(sponzaObject);
+    SceneObject *sponzaObject = new SceneObject();
+    modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
     glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
