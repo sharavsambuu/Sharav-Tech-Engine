@@ -37,6 +37,7 @@ void main(void)
     vec3 posInEyespace = (viewMatrix * modelMatrix * in_position).xyz;
     vEyeDir = vec3(0,0,0) - posInEyespace;
 
+    //vLightPosition = viewMatrix * vec4(lightPos, 0.0);
     vLightPosition = viewMatrix * vec4(lightPos, 0.0);
 
 }

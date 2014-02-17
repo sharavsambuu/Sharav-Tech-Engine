@@ -51,6 +51,8 @@ private:
     bool isInitialized;
     int windowWidth;
     int windowHeight;
+    
+    float zFarDistance;
 
     // logic
     bool wKeyPressed;

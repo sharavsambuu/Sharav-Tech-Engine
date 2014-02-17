@@ -25,5 +25,5 @@ void main(void)
     
     // debugging
     //out_color = texture2D(specularTexture, texCoord);// + texture2D(emissiveTexture, texCoord) + texture2D(specularTexture, texCoord);
-    out_color = texture2D(positionTexture, texCoord);
+    //out_color = texture2D(positionTexture, texCoord);
 }

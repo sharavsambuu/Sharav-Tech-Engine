@@ -17,7 +17,7 @@ uniform int hasNormalMap;
 uniform int hasSpecularMap;
 
 in vec2 vTexcoord;
-in vec3 vPosition; // world-space
+in vec3 vPosition;
 in vec3 vNormal;   
 in vec3 vEyeDir;   
 
@@ -54,11 +54,11 @@ void main(void)
         else {
             out_color = diffuseColor;
             out_normal = vec4(normal, 1.0);
-            out_position = vec4(vPosition, 0.0);
+            out_position = vec4(vPosition, 1.0);
         }
     } else {
         out_color = diffuseColor;
         out_normal = vec4(normal, 1.0);
-        out_position = vec4(vPosition, 0.0);
+        out_position = vec4(vPosition, 1.0);
     }
 }

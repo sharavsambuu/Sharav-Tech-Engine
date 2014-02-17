@@ -116,3 +116,7 @@ void Camera::moveLeft(bool b) {
 void Camera::moveRight(bool b) {
     isMoveRight = b;
 }
+
+float Camera::getFarDistance() {
+    return this->zFar;
+}

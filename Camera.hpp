@@ -41,6 +41,8 @@ public:
     void moveBackward(bool b);
     void moveLeft(bool b);
     void moveRight(bool b);
+    
+    float getFarDistance();
 protected:
 private:
     glm::mat4 viewMatrix;

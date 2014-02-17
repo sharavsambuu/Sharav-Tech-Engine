@@ -106,6 +106,8 @@ void DefferedRenderingExperiment::update(float deltaTime) {
     for (AbstractSceneObject* sceneObject : sceneObjects) {
         sceneObject->update(deltaTime);
     }
+    
+    this->zFarDistance = camera->getFarDistance();
 }
 
 void DefferedRenderingExperiment::render() {
@@ -118,40 +120,15 @@ void DefferedRenderingExperiment::render() {
         glUseProgram(gbufferProgramID);
         glm::mat4 modelMatrix = sceneObject->getModelMatrix();
         mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
-        //normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
-        normalMatrix = glm::inverseTranspose(glm::mat3(modelMatrix));
+        normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
         glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
         glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
         glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
         glUniformMatrix3fv(glGetUniformLocation(gbufferProgramID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+        glUniform1f(glGetUniformLocation(gbufferProgramID, "farDistance"), this->zFarDistance);
         sceneObject->render(gbufferProgramID);
         glUseProgram(0);
     }
-    
-    //**************************** STENCIL *************************************
-/*for (AbstractLight* light : sceneLights) {
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_STENCIL_TEST);
-        glDrawBuffer(GL_NONE);
-        glDisable(GL_CULL_FACE);
-        glClear(GL_STENCIL_BUFFER_BIT);
-        glStencilFunc(GL_ALWAYS, 0, 0);
-        glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
-        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
-        glUseProgram(nullProgramID);
-        glm::mat4 lightModelMatrix = glm::mat4(1.0);
-        lightModelMatrix = glm::translate(lightModelMatrix, light->getPosition());
-        lightModelMatrix = glm::scale(lightModelMatrix, glm::vec3(light->getRadius(), light->getRadius(), light->getRadius()));
-        pointLightVolume->setModelMatrix(lightModelMatrix);
-        glm::mat4 modelMatrix = pointLightVolume->getModelMatrix();
-        mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
-        glUniformMatrix4fv(glGetUniformLocation(nullProgramID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-        pointLightVolume->render(lightingProgramID);
-        glUseProgram(0);
-        glDisable(GL_STENCIL_TEST);
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-*/
     //**************************** LIGHTING ************************************
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
@@ -188,6 +165,9 @@ void DefferedRenderingExperiment::render() {
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, depthTexture);
         glUniform1i(glGetUniformLocation(lightingProgramID, "depth_texture"), 2);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, positionTexture);
+        glUniform1i(glGetUniformLocation(lightingProgramID, "position_texture"), 3);
 
         glUniform2f(glGetUniformLocation(lightingProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
         glUniform1i(glGetUniformLocation(lightingProgramID, "lightRadius"), light->getRadius());
@@ -232,10 +212,12 @@ void DefferedRenderingExperiment::render() {
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, specularTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "specularTexture"), 2);
-    glActiveTexture(GL_TEXTURE3);
+    
+    //glActiveTexture(GL_TEXTURE3);
     //glBindTexture(GL_TEXTURE_2D, positionTexture);
-    glBindTexture(GL_TEXTURE_2D, normalTexture);
-    glUniform1i(glGetUniformLocation(combineProgramID, "positionTexture"), 3);
+    //glBindTexture(GL_TEXTURE_2D, normalTexture);
+    //glBindTexture(GL_TEXTURE_2D, depthTexture);
+    //glUniform1i(glGetUniformLocation(combineProgramID, "positionTexture"), 3);
 
     glUniform2f(glGetUniformLocation(combineProgramID, "screen_dimension"), windowWidth, windowHeight);
     glEnableVertexAttribArray(0);
@@ -331,11 +313,13 @@ void DefferedRenderingExperiment::initialize() {
     
     glGenTextures(1, &depthTexture);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, windowWidth, windowHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, windowWidth, windowHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 
     glGenFramebuffers(1, &gbufferFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
@@ -431,9 +415,9 @@ void DefferedRenderingExperiment::initialize() {
     // Loading scene stuff
 
     ModelLoader modelLoader;
-    SceneObject *sponzaObject = new SceneObject();
-    modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
-    sceneObjects.push_back(sponzaObject);
+    //SceneObject *sponzaObject = new SceneObject();
+    //modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    //sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
     glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
