@@ -112,10 +112,10 @@ void main(void)
         if (opacityColor.rgb==vec3(0,0,0))
             discard;
         else {
-            out_color = resultColor;
+            out_color = resultColor.xyz;
         }
     } else {
-        out_color = resultColor;
+        out_color = resultColor.xyz;
     }
     
 }

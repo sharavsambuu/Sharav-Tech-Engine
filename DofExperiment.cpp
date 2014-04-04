@@ -364,12 +364,7 @@ void DofExperiment::initialize() {
     pointLight->setMinBoundary(sponzaObject->getBoundingBoxMin());
     pointLight->setMaxBoundary(sponzaObject->getBoundingBoxMax());
     sceneObjects.push_back(sponzaObject);
-    SceneObject *vehicleObject = new SceneObject();
-    modelLoader.loadSceneModel("models/dragon.obj", vehicleObject);
-    //modelLoader.loadSceneModel("models/spacefighter.obj", vehicleObject);
-    glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
-    vehicleObject->setModelMatrix(glm::scale(vehicleObject->getModelMatrix(), glm::vec3(10, 10, 10)));
-    this->sceneObjects.push_back(vehicleObject);
+    
 
     ////////////////////////////////////////////////////////////////////////////
 

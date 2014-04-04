@@ -18,7 +18,7 @@ const float weights[5] = float[](0.12, 0.22, 0.32, 0.22, 0.12);
 
 void main(void)
 {
-    float depth = texture2D(uDepthTex, vCoord);
+    float depth = texture2D(uDepthTex, vCoord).x;
     vec4 screenPosition = vec4(
         vCoord.x,
         vCoord.y,
@@ -52,6 +52,6 @@ void main(void)
             out_color += temp * weights[i];
         }
     } else {
-        out_color = texture2D(uScreenTex, vCoord);
+        out_color = texture2D(uScreenTex, vCoord).xyz;
     }    
 }

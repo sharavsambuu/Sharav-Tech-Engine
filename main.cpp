@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     DefferedRenderingExperiment *defferedRenderingExp = new DefferedRenderingExperiment();
     gear->addState("dof", dofExp);
     gear->addState("deffered", defferedRenderingExp);
-    gear->changeState("deffered");
+    gear->changeState("dof");
     while (gear->keepRunning()) {
         gear->input();
         gear->update();
