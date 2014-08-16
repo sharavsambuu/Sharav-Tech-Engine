@@ -1,4 +1,5 @@
 #version 330
+
 precision highp float;
 uniform sampler2D material_diffuse_texture;
 uniform sampler2D material_normal_texture;

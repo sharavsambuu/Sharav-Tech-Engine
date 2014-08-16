@@ -96,8 +96,9 @@ void DeferredExperiment::update(float deltaTime) {
 
     this->camera->update(deltaTime);
 
-    this->viewMatrix       = camera->getViewMatrix();
-    this->projectionMatrix = camera->getProjectionMatrix();
+    this->viewMatrix              = camera->getViewMatrix();
+    this->projectionMatrix        = camera->getProjectionMatrix();
+    this->inverseProjectionMatrix = glm::inverse(projectionMatrix);
 
     for (AbstractLight* light : sceneLights) {
         light->update(deltaTime);
@@ -113,7 +114,9 @@ void DeferredExperiment::render() {
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
+    glCullFace(GL_BACK);
     
     for (AbstractSceneObject* sceneObject : sceneObjects) {
         glUseProgram(gbufferProgramID);
@@ -126,71 +129,53 @@ void DeferredExperiment::render() {
     }
     
     //**************************** LIGHTING ************************************
-    /*
+    
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    GLenum lightingBuffers[2];
+    lightingBuffers[0] = GL_COLOR_ATTACHMENT0;
+    lightingBuffers[1] = GL_COLOR_ATTACHMENT1;
+    glDrawBuffers(2, lightingBuffers);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glCullFace(GL_FRONT);
+    glDepthMask(GL_FALSE);
+    glDepthFunc(GL_GEQUAL);
+    
+    glUseProgram(lightingProgramID);
+    
     for (AbstractLight* light : sceneLights) {
-        glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_ONE, GL_ONE);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-
-        glm::mat4 lightModelMatrix = glm::mat4(1.0);
-        lightModelMatrix = glm::translate(lightModelMatrix, light->getPosition());
-        lightModelMatrix = glm::scale(lightModelMatrix, glm::vec3(light->getRadius(), light->getRadius(), light->getRadius()));
-        pointLightVolume->setModelMatrix(lightModelMatrix);
-        float distance = glm::length(light->getPosition() - camera->getPosition());
-        if (distance < light->getRadius()) {
-            glCullFace(GL_FRONT);
-        } else {
-            glCullFace(GL_BACK);
-        }
-        glUseProgram(lightingProgramID);
-
-        glm::mat4 inverseProjectionMatrix = glm::inverse(projectionMatrix);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, colourTexture);
-        glUniform1i(glGetUniformLocation(lightingProgramID, "colour_texture"), 0);
+        glUniform1i(glGetUniformLocation(lightingProgramID, "u_DiffuseTex"), 0);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, normalTexture);
-        glUniform1i(glGetUniformLocation(lightingProgramID, "normal_texture"), 1);
+        glUniform1i(glGetUniformLocation(lightingProgramID, "u_NormalTex"), 1);
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, depthTexture);
-        glUniform1i(glGetUniformLocation(lightingProgramID, "depth_texture"), 2);
+        glUniform1i(glGetUniformLocation(lightingProgramID, "u_DepthTex"), 2);
+        
+        glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "u_InvProj"), 1, GL_FALSE, glm::value_ptr(inverseProjectionMatrix));
+        glUniform2f(glGetUniformLocation(lightingProgramID, "u_Viewport"), windowWidth, windowHeight);
+        glUniform3f(glGetUniformLocation(lightingProgramID, "u_LightColor"), light->getColor().x, light->getColor().y, light->getColor().z);
+        glUniform3f(glGetUniformLocation(lightingProgramID, "u_LightPosition"), light->getPosition().x, light->getPosition().y, light->getPosition().z);
+        glUniform1f(glGetUniformLocation(lightingProgramID, "u_LightSize"), light->getRadius());
 
-        glUniform2f(glGetUniformLocation(lightingProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
-        glUniform1i(glGetUniformLocation(lightingProgramID, "lightRadius"), light->getRadius());
-        glUniform3f(glGetUniformLocation(lightingProgramID, "lightPos"), light->getPosition().x, light->getPosition().y, light->getPosition().z);
-        glUniform4f(glGetUniformLocation(lightingProgramID, "lightColor"), light->getColor().x, light->getColor().y, light->getColor().z, light->getColor().w);
-        glUniform3f(glGetUniformLocation(lightingProgramID, "cameraPos"), camera->getPosition().x, camera->getPosition().y, camera->getPosition().z);
-        glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "inverseProjection"), 1, GL_FALSE, glm::value_ptr(inverseProjectionMatrix));
-        glUniform2f(glGetUniformLocation(lightingProgramID, "screen_dimension"), windowWidth, windowHeight);
-        glm::mat4 modelMatrix = pointLightVolume->getModelMatrix();
-        mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
-        normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-        glUniformMatrix3fv(glGetUniformLocation(lightingProgramID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-        pointLightVolume->render(lightingProgramID);
-
-        glCullFace(GL_BACK);
-        glDisable(GL_BLEND);
-
-        glUseProgram(0);
-    }
-    glEnable(GL_DEPTH_TEST);
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDisableVertexAttribArray(0);
+    }    
+    glActiveTexture(0);
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
     glCullFace(GL_BACK);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-     */
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);    
 
     //************************* PRESENTING FRAME *******************************
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -200,7 +185,7 @@ void DeferredExperiment::render() {
     glUseProgram(combineProgramID);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, normalTexture);
+    glBindTexture(GL_TEXTURE_2D, emissiveTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "diffuseTexture"), 0);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, emissiveTexture);
@@ -383,9 +368,9 @@ void DeferredExperiment::initialize() {
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
     glBufferData(GL_ARRAY_BUFFER, sizeof (quadVertices), quadVertices, GL_STATIC_DRAW);
 
-    /*
+    
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    /*glDepthFunc(GL_LESS);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
