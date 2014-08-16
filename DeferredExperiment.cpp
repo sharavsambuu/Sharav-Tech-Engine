@@ -96,7 +96,7 @@ void DeferredExperiment::update(float deltaTime) {
 
     this->camera->update(deltaTime);
 
-    this->viewMatrix = camera->getViewMatrix();
+    this->viewMatrix       = camera->getViewMatrix();
     this->projectionMatrix = camera->getProjectionMatrix();
 
     for (AbstractLight* light : sceneLights) {
@@ -104,16 +104,14 @@ void DeferredExperiment::update(float deltaTime) {
     }
     for (AbstractSceneObject* sceneObject : sceneObjects) {
         sceneObject->update(deltaTime);
-    }
-    
-    this->zFarDistance = camera->getFarDistance();
+    }    
 }
 
 void DeferredExperiment::render() {
     //************************** FILL GBUFFER **********************************
     
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
-    glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     
@@ -122,7 +120,7 @@ void DeferredExperiment::render() {
         glm::mat4 worldMatrix = sceneObject->getModelMatrix();
         glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "u_Projection"), 1, GL_FALSE, glm::value_ptr(projectionMatrix));
         glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "u_View"      ), 1, GL_FALSE, glm::value_ptr(viewMatrix      ));
-        glUniformMatrix3fv(glGetUniformLocation(gbufferProgramID, "u_World"     ), 1, GL_FALSE, glm::value_ptr(worldMatrix     ));
+        glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "u_World"     ), 1, GL_FALSE, glm::value_ptr(worldMatrix     ));
         sceneObject->render(gbufferProgramID);
         glUseProgram(0);
     }
@@ -202,7 +200,7 @@ void DeferredExperiment::render() {
     glUseProgram(combineProgramID);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, colourTexture);
+    glBindTexture(GL_TEXTURE_2D, normalTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "diffuseTexture"), 0);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, emissiveTexture);
@@ -401,17 +399,17 @@ void DeferredExperiment::initialize() {
 
     
     ModelLoader modelLoader;
+    
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
     glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
     vehicleObject->setModelMatrix(glm::scale(vehicleObject->getModelMatrix(), glm::vec3(10, 10, 10)));
     sceneObjects.push_back(vehicleObject);
-     
     /*
-    pointLightVolume = new SceneObject();
-    pointLightVolume->setLightVolumeBool(true);
-    modelLoader.loadSceneModel("models/sphere.obj", pointLightVolume);
-     */
+    SceneObject *sponzaObject = new SceneObject();
+    modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
+    sceneObjects.push_back(sponzaObject);
+    */
 
     std::cout << "<<<<< Model loading is done." << std::endl;
     

@@ -1,4 +1,5 @@
 #version 330
+precision highp float;
 uniform sampler2D material_diffuse_texture;
 uniform sampler2D material_normal_texture;
 uniform sampler2D material_ambient_texture;
@@ -60,6 +61,4 @@ void main(void)
         out_color  = vec4(diffuseColor, 1.0);
         out_normal = encode(normal);       
     }
-    //out_color = vec4(0.5, 0.5, 0.5, 1.0);
-    out_color  = vec4(diffuseColor, 1.0);
 }

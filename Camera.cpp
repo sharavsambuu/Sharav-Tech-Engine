@@ -12,7 +12,7 @@ Camera::Camera() {
     sensitivity = 0.001f;
     fov = 60.0f;
     zNear = 1.0;
-    zFar = 10000.0f;
+    zFar = 100.0f;
 }
 
 Camera::~Camera() {

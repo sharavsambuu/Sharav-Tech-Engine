@@ -372,10 +372,10 @@ void DofExperiment::initialize() {
 
     ambientLightIntensity = 0.2;
 
-    programID = (*sm)["phong"]->GetID();
-    quadProgramID = (*sm)["quad"]->GetID();
-    gausProgramID = (*sm)["gaus"]->GetID();
-    dofProgramID = (*sm)["dof"]->GetID();
+    programID     = (*sm)["phong"]->GetID();
+    quadProgramID = (*sm)["quad" ]->GetID();
+    gausProgramID = (*sm)["gaus" ]->GetID();
+    dofProgramID  = (*sm)["dof"  ]->GetID();
 
     animationTime = 0.0f;
 

@@ -63,10 +63,10 @@ void SceneObject::addMesh(
         programID = (*sm)["phong"]->GetID();
     }
 
-    GLuint positionAttrib = glGetAttribLocation(programID, "in_position");
-    GLuint normalAttrib = glGetAttribLocation(programID, "in_normal");
-    GLuint texcoordAttrib = glGetAttribLocation(programID, "in_texcoord");
-    GLuint tangentAttrib = glGetAttribLocation(programID, "in_tangent");
+    GLuint positionAttrib  = glGetAttribLocation(programID, "in_position" );
+    GLuint normalAttrib    = glGetAttribLocation(programID, "in_normal"   );
+    GLuint texcoordAttrib  = glGetAttribLocation(programID, "in_texcoord" );
+    GLuint tangentAttrib   = glGetAttribLocation(programID, "in_tangent"  );
     GLuint bitangentAttrib = glGetAttribLocation(programID, "in_bitangent");
 
     Mesh m;
