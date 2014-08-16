@@ -32,7 +32,7 @@ void main(void)
 {
     vec2 texCoord = vec2(gl_FragCoord.x, gl_FragCoord.y)/screen_dimension;
     
-    float depth = texture2D(depth_texture, texCoord);
+    float depth = texture2D(depth_texture, texCoord).x;
 /*    vec4 screenPosition = vec4(
         texCoord,
         depth,

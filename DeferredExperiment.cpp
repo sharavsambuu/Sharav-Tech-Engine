@@ -1,5 +1,4 @@
-
-#include "DefferedRenderingExperiment.hpp"
+#include "DeferredExperiment.hpp"
 #include "GLFWApp.hpp"
 #include "Camera.hpp"
 #include <iostream>
@@ -8,15 +7,16 @@
 #include "Gear.hpp"
 #include "GLError.hpp"
 #include "PointLight.hpp"
-#include <glm/gtx/norm.hpp> 
+#include <glm/gtx/norm.hpp>
+#include <GL/glcorearb.h> 
 
-DefferedRenderingExperiment::DefferedRenderingExperiment() {
+DeferredExperiment::DeferredExperiment() {
     isEntered = true;
     isFirstTime = true;
     isInitialized = false;
 }
 
-DefferedRenderingExperiment::~DefferedRenderingExperiment() {
+DeferredExperiment::~DeferredExperiment() {
     std::cout << "<<<<< Dof experiment destruction function " << std::endl;
     for (auto object : sceneObjects) {
         if (object)
@@ -25,8 +25,7 @@ DefferedRenderingExperiment::~DefferedRenderingExperiment() {
     delete pointLightVolume;
     glDeleteTextures(1, &colourTexture);
     glDeleteTextures(1, &normalTexture);
-    glDeleteTextures(1, &depthTexture);
-    glDeleteTextures(1, &positionTexture);
+    glDeleteTextures(1, &depthTexture);    
     glDeleteFramebuffers(1, &gbufferFBO);
     glDeleteTextures(1, &emissiveTexture);
     glDeleteTextures(1, &specularTexture);
@@ -35,15 +34,15 @@ DefferedRenderingExperiment::~DefferedRenderingExperiment() {
     delete ShaderManager::getSingleton();
 }
 
-bool DefferedRenderingExperiment::isInitializationDone() {
+bool DeferredExperiment::isInitializationDone() {
     return this->isInitialized;
 }
 
-void DefferedRenderingExperiment::pause() {
+void DeferredExperiment::pause() {
     isEntered = false;
 }
 
-void DefferedRenderingExperiment::resume() {
+void DeferredExperiment::resume() {
     isEntered = true;
     enteredTime = 0.0f;
     std::cout << "<<<<< Entered Deffered Rendering experimentation State" << std::endl;
@@ -54,7 +53,7 @@ void DefferedRenderingExperiment::resume() {
     }
 }
 
-void DefferedRenderingExperiment::input() {
+void DeferredExperiment::input() {
     GLFWApp *app = GLFWApp::getSingleton();
 
     camera->updateAngles(app->getDeltaMouseX(), app->getDeltaMouseY());
@@ -81,7 +80,7 @@ void DefferedRenderingExperiment::input() {
 
 }
 
-void DefferedRenderingExperiment::update(float deltaTime) {
+void DeferredExperiment::update(float deltaTime) {
     camera->moveForward(false);
     camera->moveBackward(false);
     camera->moveLeft(false);
@@ -110,26 +109,26 @@ void DefferedRenderingExperiment::update(float deltaTime) {
     this->zFarDistance = camera->getFarDistance();
 }
 
-void DefferedRenderingExperiment::render() {
+void DeferredExperiment::render() {
     //************************** FILL GBUFFER **********************************
+    
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
+    
     for (AbstractSceneObject* sceneObject : sceneObjects) {
         glUseProgram(gbufferProgramID);
-        glm::mat4 modelMatrix = sceneObject->getModelMatrix();
-        mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
-        normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix * modelMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "mvpMatrix"), 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
-        glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-        glUniformMatrix3fv(glGetUniformLocation(gbufferProgramID, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-        glUniform1f(glGetUniformLocation(gbufferProgramID, "farDistance"), this->zFarDistance);
+        glm::mat4 worldMatrix = sceneObject->getModelMatrix();
+        glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "u_Projection"), 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+        glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "u_View"      ), 1, GL_FALSE, glm::value_ptr(viewMatrix      ));
+        glUniformMatrix3fv(glGetUniformLocation(gbufferProgramID, "u_World"     ), 1, GL_FALSE, glm::value_ptr(worldMatrix     ));
         sceneObject->render(gbufferProgramID);
         glUseProgram(0);
     }
+    
     //**************************** LIGHTING ************************************
+    /*
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -165,9 +164,6 @@ void DefferedRenderingExperiment::render() {
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, depthTexture);
         glUniform1i(glGetUniformLocation(lightingProgramID, "depth_texture"), 2);
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, positionTexture);
-        glUniform1i(glGetUniformLocation(lightingProgramID, "position_texture"), 3);
 
         glUniform2f(glGetUniformLocation(lightingProgramID, "pixelSize"), 1.0f / windowWidth, 1.0f / windowHeight);
         glUniform1i(glGetUniformLocation(lightingProgramID, "lightRadius"), light->getRadius());
@@ -196,11 +192,13 @@ void DefferedRenderingExperiment::render() {
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+     */
 
     //************************* PRESENTING FRAME *******************************
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, windowWidth, windowHeight);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    
     glUseProgram(combineProgramID);
 
     glActiveTexture(GL_TEXTURE0);
@@ -213,22 +211,17 @@ void DefferedRenderingExperiment::render() {
     glBindTexture(GL_TEXTURE_2D, specularTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "specularTexture"), 2);
     
-    //glActiveTexture(GL_TEXTURE3);
-    //glBindTexture(GL_TEXTURE_2D, positionTexture);
-    //glBindTexture(GL_TEXTURE_2D, normalTexture);
-    //glBindTexture(GL_TEXTURE_2D, depthTexture);
-    //glUniform1i(glGetUniformLocation(combineProgramID, "positionTexture"), 3);
-
     glUniform2f(glGetUniformLocation(combineProgramID, "screen_dimension"), windowWidth, windowHeight);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glDisableVertexAttribArray(0);
+
     glUseProgram(0);
 }
 
-void DefferedRenderingExperiment::initialize() {
+void DeferredExperiment::initialize() {
     this->windowWidth = (int) SCREEN_WIDTH;
     this->windowHeight = (int) SCREEN_HEIGHT;
 
@@ -287,54 +280,44 @@ void DefferedRenderingExperiment::initialize() {
 
     // First pass stuffs
 
+    // RGB : albedo
     glGenTextures(1, &colourTexture);
     glBindTexture(GL_TEXTURE_2D, colourTexture);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
+    // RG : View Space normal
     glGenTextures(1, &normalTexture);
     glBindTexture(GL_TEXTURE_2D, normalTexture);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, windowWidth, windowHeight, 0, GL_RG, GL_FLOAT, 0);
     
-    glGenTextures(1, &positionTexture);
-    glBindTexture(GL_TEXTURE_2D, positionTexture);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    
+    // R : Depth
     glGenTextures(1, &depthTexture);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, windowWidth, windowHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 
     glGenFramebuffers(1, &gbufferFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourTexture, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normalTexture, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, positionTexture, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 , GL_TEXTURE_2D, colourTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1 , GL_TEXTURE_2D, normalTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT  , GL_TEXTURE_2D, depthTexture , 0);
 
-    GLenum buffers[3];
+    GLenum buffers[2];
     buffers[0] = GL_COLOR_ATTACHMENT0;
-    buffers[1] = GL_COLOR_ATTACHMENT1;
-    buffers[2] = GL_COLOR_ATTACHMENT2;
+    buffers[1] = GL_COLOR_ATTACHMENT1;    
 
-    glDrawBuffers(3, buffers);
+    glDrawBuffers(2, buffers);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << ">>>>> cannot create a framebuffer object for the gbuffer" << std::endl;
@@ -352,19 +335,19 @@ void DefferedRenderingExperiment::initialize() {
 
     glGenTextures(1, &emissiveTexture);
     glBindTexture(GL_TEXTURE_2D, emissiveTexture);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
     glGenTextures(1, &specularTexture);
     glBindTexture(GL_TEXTURE_2D, specularTexture);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
     glGenFramebuffers(1, &lightingFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
@@ -402,6 +385,7 @@ void DefferedRenderingExperiment::initialize() {
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
     glBufferData(GL_ARRAY_BUFFER, sizeof (quadVertices), quadVertices, GL_STATIC_DRAW);
 
+    /*
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_CULL_FACE);
@@ -411,33 +395,36 @@ void DefferedRenderingExperiment::initialize() {
     glEnable(GL_ALPHA_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    */
 
     // Loading scene stuff
 
+    
     ModelLoader modelLoader;
-    //SceneObject *sponzaObject = new SceneObject();
-    //modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
-    //sceneObjects.push_back(sponzaObject);
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
     glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
     vehicleObject->setModelMatrix(glm::scale(vehicleObject->getModelMatrix(), glm::vec3(10, 10, 10)));
     sceneObjects.push_back(vehicleObject);
-
+     
+    /*
     pointLightVolume = new SceneObject();
     pointLightVolume->setLightVolumeBool(true);
     modelLoader.loadSceneModel("models/sphere.obj", pointLightVolume);
+     */
 
+    std::cout << "<<<<< Model loading is done." << std::endl;
+    
     // Creating lights
     for (int i = 0; i < 50; i++)
         sceneLights.push_back(new PointLight());
 
     glViewport(0, 0, (int) windowWidth, (int) windowHeight);
 
-    gbufferProgramID = (*sm)["gbuffer"]->GetID();
+    gbufferProgramID  = (*sm)["gbuffer" ]->GetID();
     lightingProgramID = (*sm)["lighting"]->GetID();
-    combineProgramID = (*sm)["combine"]->GetID();
-    nullProgramID = (*sm)["null"]->GetID();
+    combineProgramID  = (*sm)["combine" ]->GetID();
+    nullProgramID     = (*sm)["null"    ]->GetID();
 
     this->isInitialized = true;
 }

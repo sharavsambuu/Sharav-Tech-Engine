@@ -1,13 +1,12 @@
 /* 
- * File:   DefferedRenderingExperiment.hpp
+ * File:   DeferredExperiment.hpp
  * Author: prompto
  *
- * Created on December 14, 2013, 7:48 AM
+ * Created on August 16, 2014, 11:05 PM
  */
 
-#ifndef DEFFEREDRENDERINGEXPERIMENT_HPP
-#define	DEFFEREDRENDERINGEXPERIMENT_HPP
-
+#ifndef DEFERREDEXPERIMENT_HPP
+#define	DEFERREDEXPERIMENT_HPP
 
 #include "AbstractState.hpp"
 #include <glm/glm.hpp>
@@ -24,10 +23,10 @@
 #include "AbstractLight.hpp"
 #include <vector>
 
-class DefferedRenderingExperiment : public AbstractState {
+class DeferredExperiment : public AbstractState {
 public:
-    DefferedRenderingExperiment();
-    ~DefferedRenderingExperiment();
+    DeferredExperiment();
+    ~DeferredExperiment();
 
     void pause();
     void resume();
@@ -40,7 +39,7 @@ public:
     bool isInitializationDone();
 private:
     std::vector<AbstractSceneObject *> sceneObjects;
-    std::vector<AbstractLight *> sceneLights;
+    std::vector<AbstractLight       *> sceneLights;
     SceneObject *pointLightVolume;
     Camera* camera;
     
@@ -62,22 +61,21 @@ private:
 
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
-    glm::mat4 mvpMatrix;
-    glm::mat3 normalMatrix;
 
+    // GPU shader programs
     GLuint gbufferProgramID;
     GLuint lightingProgramID;
     GLuint combineProgramID;
     GLuint nullProgramID;
     
     // first pass
-    GLuint gbufferFBO; // G-Buffer
-    GLuint colourTexture; // albedo
-    GLuint normalTexture; // normal
-    GLuint depthTexture; // depth
-    GLuint positionTexture; // position
+    GLuint gbufferFBO;      // G-Buffer
+    GLuint colourTexture;   // albedo
+    GLuint normalTexture;   // normal
+    GLuint depthTexture;    // depth
+    
     // second pass
-    GLuint lightingFBO; // point lighting
+    GLuint lightingFBO;     // point lighting
     GLuint emissiveTexture; // emissive lighting information
     GLuint specularTexture; // specular lighting information
 
@@ -87,5 +85,6 @@ private:
 
 };
 
-#endif	/* DEFFEREDRENDERINGEXPERIMENT_HPP */
+
+#endif	/* DEFERREDEXPERIMENT_HPP */
 

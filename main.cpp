@@ -10,7 +10,7 @@
 #include "GLFWApp.hpp"
 #include "Gear.hpp"
 #include "DofExperiment.hpp"
-#include "DefferedRenderingExperiment.hpp"
+#include "DeferredExperiment.hpp"
 using namespace std;
 
 /*
@@ -21,10 +21,10 @@ int main(int argc, char** argv) {
     std::cout << "<<<<< SYSTEM STARTING >>>>>" << std::endl;
     Gear *gear = Gear::getSingleton();
     DofExperiment *dofExp = new DofExperiment();
-    DefferedRenderingExperiment *defferedRenderingExp = new DefferedRenderingExperiment();
-    gear->addState("dof", dofExp);
-    gear->addState("deffered", defferedRenderingExp);
-    gear->changeState("dof");
+    DeferredExperiment *deferredExp = new DeferredExperiment();
+    gear->addState("dof"     , dofExp);
+    gear->addState("deferred", deferredExp);
+    gear->changeState("deferred");
     while (gear->keepRunning()) {
         gear->input();
         gear->update();
