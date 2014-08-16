@@ -13,6 +13,9 @@ ehthumbs.db
 Thumbs.db
 *.log
 .dep.inc
+*~
+*.swp
+*.swo
 build/
 dist/
 models/
