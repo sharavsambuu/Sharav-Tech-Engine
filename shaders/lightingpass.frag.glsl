@@ -27,7 +27,7 @@ vec3 decode(vec2 encoded)
 
 void main(void)
 {
-    vec2 tex_coord = gl_FragCoord.xy/u_Viewport; // map to [0..1]
+    vec2 tex_coord = vec2(gl_FragCoord.x, gl_FragCoord.y)/u_Viewport; // map to [0..1]
     
     vec3 albedo = texture2D(u_DiffuseTex, tex_coord).rgb;
     vec3 normal = decode(texture2D(u_NormalTex, tex_coord).rg);
@@ -50,7 +50,8 @@ void main(void)
 
     vec3 final_lighting = attenuation * diffuse;
 
-    //out_color1 = vec4(final_lighting * albedo, 1.0);
-    out_color1 = vec4(albedo, 1.0);
-    out_color2 = out_color2;
+    out_color1 = vec4(final_lighting * albedo, 1.0);
+    //out_color1 = vec4(diffuse, 1.0);
+    out_color2 = out_color1;
+
 }

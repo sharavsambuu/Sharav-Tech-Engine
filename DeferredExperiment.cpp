@@ -131,11 +131,11 @@ void DeferredExperiment::render() {
     //**************************** LIGHTING ************************************
     
     glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
-    GLenum lightingBuffers[2];
+    /*GLenum lightingBuffers[2];
     lightingBuffers[0] = GL_COLOR_ATTACHMENT0;
     lightingBuffers[1] = GL_COLOR_ATTACHMENT1;
-    glDrawBuffers(2, lightingBuffers);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    glDrawBuffers(2, lightingBuffers);*/
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_BLEND);
@@ -146,6 +146,8 @@ void DeferredExperiment::render() {
     
     glUseProgram(lightingProgramID);
     
+    glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "u_Projection"), 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "u_View"      ), 1, GL_FALSE, glm::value_ptr(viewMatrix      ));
     for (AbstractLight* light : sceneLights) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, colourTexture);
@@ -157,18 +159,41 @@ void DeferredExperiment::render() {
         glBindTexture(GL_TEXTURE_2D, depthTexture);
         glUniform1i(glGetUniformLocation(lightingProgramID, "u_DepthTex"), 2);
         
+        glm::vec4 posInView = viewMatrix * glm::vec4(light->getPosition(), 1.0f);
+        glm::mat4 worldLightMat(1);
+        worldLightMat = glm::scale(worldLightMat, glm::vec3(light->getRadius(), light->getRadius(), light->getRadius()));
+        glUniformMatrix4fv(glGetUniformLocation(gbufferProgramID, "u_World"     ), 1, GL_FALSE, glm::value_ptr(worldLightMat));
         glUniformMatrix4fv(glGetUniformLocation(lightingProgramID, "u_InvProj"), 1, GL_FALSE, glm::value_ptr(inverseProjectionMatrix));
-        glUniform2f(glGetUniformLocation(lightingProgramID, "u_Viewport"), windowWidth, windowHeight);
+        glUniform2f(glGetUniformLocation(lightingProgramID, "u_Viewport"), (float)windowWidth, (float)windowHeight);
         glUniform3f(glGetUniformLocation(lightingProgramID, "u_LightColor"), light->getColor().x, light->getColor().y, light->getColor().z);
-        glUniform3f(glGetUniformLocation(lightingProgramID, "u_LightPosition"), light->getPosition().x, light->getPosition().y, light->getPosition().z);
+        glUniform3f(glGetUniformLocation(lightingProgramID, "u_LightPosition"), posInView.x, posInView.y, posInView.z);
         glUniform1f(glGetUniformLocation(lightingProgramID, "u_LightSize"), light->getRadius());
 
+        /*
+        glBindBuffer(GL_ARRAY_BUFFER, cubeVertexBufferID);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIndexBufferID);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*3, (void*)0);
+        glDrawElements(GL_TRIANGLES, sizeof(cubeIndices)/sizeof(cubeIndices[0]), GL_UNSIGNED_SHORT, NULL);
+        */
+        
+        glUniform2f(glGetUniformLocation(lightingProgramID, "u_Viewport"), (float)windowWidth, (float)windowHeight);
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glDisableVertexAttribArray(0);
+       
     }    
+    
+    /*
+    glUniform2f(glGetUniformLocation(lightingProgramID, "u_Viewport"), (float)windowWidth, (float)windowHeight);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDisableVertexAttribArray(0);
+    */
+        
     glActiveTexture(0);
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
@@ -194,7 +219,7 @@ void DeferredExperiment::render() {
     glBindTexture(GL_TEXTURE_2D, specularTexture);
     glUniform1i(glGetUniformLocation(combineProgramID, "specularTexture"), 2);
     
-    glUniform2f(glGetUniformLocation(combineProgramID, "screen_dimension"), windowWidth, windowHeight);
+    glUniform2f(glGetUniformLocation(combineProgramID, "screen_dimension"), (float)windowWidth, (float)windowHeight);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
@@ -214,49 +239,49 @@ void DeferredExperiment::initialize() {
     sm->isUsingGBuffer = true;
 
     sm->CreateShaderProgram("gbuffer");
-    sm->AttachShader("gbufferVertex", VERTEX);
+    sm->AttachShader("gbufferVertex"  , VERTEX  );
     sm->AttachShader("gbufferFragment", FRAGMENT);
-    sm->LoadShaderSource("gbufferVertex", "shaders/gbuffer.vert.glsl");
+    sm->LoadShaderSource("gbufferVertex"  , "shaders/gbuffer.vert.glsl");
     sm->LoadShaderSource("gbufferFragment", "shaders/gbuffer.frag.glsl");
-    sm->CompileShader("gbufferVertex");
+    sm->CompileShader("gbufferVertex"  );
     sm->CompileShader("gbufferFragment");
-    sm->AttachShaderToProgram("gbuffer", "gbufferVertex");
+    sm->AttachShaderToProgram("gbuffer", "gbufferVertex"  );
     sm->AttachShaderToProgram("gbuffer", "gbufferFragment");
     sm->LinkProgramObject("gbuffer");
     std::cout << "GBuffer Program ID is " << (*sm)["gbuffer"]->GetID() << std::endl;
 
     sm->CreateShaderProgram("lighting");
-    sm->AttachShader("lightingVertex", VERTEX);
+    sm->AttachShader("lightingVertex"  , VERTEX  );
     sm->AttachShader("lightingFragment", FRAGMENT);
-    sm->LoadShaderSource("lightingVertex", "shaders/lightingpass.vert.glsl");
+    sm->LoadShaderSource("lightingVertex"  , "shaders/lightingpass.vert.glsl");
     sm->LoadShaderSource("lightingFragment", "shaders/lightingpass.frag.glsl");
-    sm->CompileShader("lightingVertex");
+    sm->CompileShader("lightingVertex"  );
     sm->CompileShader("lightingFragment");
-    sm->AttachShaderToProgram("lighting", "lightingVertex");
+    sm->AttachShaderToProgram("lighting", "lightingVertex"  );
     sm->AttachShaderToProgram("lighting", "lightingFragment");
     sm->LinkProgramObject("lighting");
     std::cout << "Lighting pass Program ID is " << (*sm)["lighting"]->GetID() << std::endl;
 
     sm->CreateShaderProgram("combine");
-    sm->AttachShader("combineVertex", VERTEX);
+    sm->AttachShader("combineVertex"  , VERTEX  );
     sm->AttachShader("combineFragment", FRAGMENT);
-    sm->LoadShaderSource("combineVertex", "shaders/gcombine.vert.glsl");
+    sm->LoadShaderSource("combineVertex"  , "shaders/gcombine.vert.glsl");
     sm->LoadShaderSource("combineFragment", "shaders/gcombine.frag.glsl");
-    sm->CompileShader("combineVertex");
+    sm->CompileShader("combineVertex"  );
     sm->CompileShader("combineFragment");
-    sm->AttachShaderToProgram("combine", "combineVertex");
+    sm->AttachShaderToProgram("combine", "combineVertex"  );
     sm->AttachShaderToProgram("combine", "combineFragment");
     sm->LinkProgramObject("combine");
     std::cout << "combine program ID is " << (*sm)["combine"]->GetID() << std::endl;
 
     sm->CreateShaderProgram("null");
-    sm->AttachShader("nullVertex", VERTEX);
+    sm->AttachShader("nullVertex"  , VERTEX  );
     sm->AttachShader("nullFragment", FRAGMENT);
-    sm->LoadShaderSource("nullVertex", "shaders/null.vert.glsl");
+    sm->LoadShaderSource("nullVertex"  , "shaders/null.vert.glsl");
     sm->LoadShaderSource("nullFragment", "shaders/null.frag.glsl");
-    sm->CompileShader("nullVertex");
+    sm->CompileShader("nullVertex"  );
     sm->CompileShader("nullFragment");
-    sm->AttachShaderToProgram("null", "nullVertex");
+    sm->AttachShaderToProgram("null", "nullVertex"  );
     sm->AttachShaderToProgram("null", "nullFragment");
     sm->LinkProgramObject("null");
     std::cout << "null program ID is " << (*sm)["null"]->GetID() << std::endl;
@@ -355,7 +380,7 @@ void DeferredExperiment::initialize() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // screen aligned quads
-
+    
     const GLfloat quadVertices[] = {
         -1.0f, -1.0f, 0.0f,
         1.0f, -1.0f, 0.0f,
@@ -367,6 +392,15 @@ void DeferredExperiment::initialize() {
     glGenBuffers(2, &quadBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, quadBufferID);
     glBufferData(GL_ARRAY_BUFFER, sizeof (quadVertices), quadVertices, GL_STATIC_DRAW);
+    
+    glGenBuffers(1, &cubeVertexBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVertexBufferID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glGenBuffers(1, &cubeIndexBufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIndexBufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     
     glEnable(GL_DEPTH_TEST);
@@ -388,18 +422,19 @@ void DeferredExperiment::initialize() {
     SceneObject *vehicleObject = new SceneObject();
     modelLoader.loadSceneModel("models/R8.obj", vehicleObject);
     glm::mat4 vehicleModelMatrix = vehicleObject->getModelMatrix();
-    vehicleObject->setModelMatrix(glm::scale(vehicleObject->getModelMatrix(), glm::vec3(10, 10, 10)));
+    vehicleModelMatrix = glm::scale(vehicleModelMatrix, glm::vec3(10, 10, 10));
+    vehicleModelMatrix = glm::translate(vehicleModelMatrix, glm::vec3(5.0, 0.0, 0.0));
+    vehicleObject->setModelMatrix(vehicleModelMatrix);
     sceneObjects.push_back(vehicleObject);
-    /*
+    
     SceneObject *sponzaObject = new SceneObject();
     modelLoader.loadSceneModel("models/sponza.obj", sponzaObject);
     sceneObjects.push_back(sponzaObject);
-    */
-
+    
     std::cout << "<<<<< Model loading is done." << std::endl;
     
     // Creating lights
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < 120; i++)
         sceneLights.push_back(new PointLight());
 
     glViewport(0, 0, (int) windowWidth, (int) windowHeight);

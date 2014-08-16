@@ -81,6 +81,28 @@ private:
     GLuint specularTexture; // specular lighting information
 
     GLuint quadBufferID;
+    GLuint cubeVertexBufferID;
+    GLuint cubeIndexBufferID;
+    float cubeVertices[24] =
+    {
+         1.0f,  1.0f, -1.0f ,
+        -1.0f,  1.0f, -1.0f ,
+        -1.0f, -1.0f, -1.0f ,
+         1.0f, -1.0f, -1.0f ,
+         1.0f,  1.0f,  1.0f ,
+        -1.0f,  1.0f,  1.0f ,
+        -1.0f, -1.0f,  1.0f ,
+         1.0f, -1.0f,  1.0f  
+    };
+    uint16_t cubeIndices[36]=
+    {
+        0, 2, 1,   0, 3, 2,
+        4, 3, 0,   4, 7, 3,
+        4, 1, 5,   4, 0, 1,
+        1, 6, 5,   1, 2, 6,
+        3, 6, 2,   3, 7, 6,
+        5, 7, 4,   5, 6, 7,
+    };
 
     ShaderManager* sm;
 
