@@ -11,12 +11,18 @@ used library list and tools :
     - GLFW
     - Mingw + Netbeans 7.4 + Windows 7
     
-lib linking flags 
+lib linking flags on windows
 
     -lSOIL -lassimp.dll -lglew32 -lglu32 -lglfw3 -lopengl32 -lglu32 -lgdi32 -luser32 -lkernel32
     
 
-![alt tag](https://dl.dropboxusercontent.com/u/3482121/screenshoots/sharav-tech-engine/Deferred-renderish.jpg)
+on ubuntu 
+
+    sudo apt install libassimp-dev
+    sudo apt install libglm-dev
+    sudo apt install libsoil-dev
+    sudo apt install libglfw3-dev
+
 
 ![alt tag](http://2.bp.blogspot.com/-7rERDEBI7t8/UqRflZhDDCI/AAAAAAAAC34/vL0Gz37jiRE/s1600/fixed-material-manager-objects.jpg)
 
