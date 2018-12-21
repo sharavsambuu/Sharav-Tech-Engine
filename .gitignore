@@ -21,3 +21,5 @@ dist/
 models/
 nbproject/
 Makefile
+
+main

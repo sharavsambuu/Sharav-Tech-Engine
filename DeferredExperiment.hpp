@@ -8,12 +8,13 @@
 #ifndef DEFERREDEXPERIMENT_HPP
 #define	DEFERREDEXPERIMENT_HPP
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include "AbstractState.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/constants.hpp>
+#include <glm/gtc/constants.hpp>
 #include <GL/glew.h>
 #include "Camera.hpp"
 #include "ShaderManager.hpp"

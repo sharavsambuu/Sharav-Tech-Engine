@@ -1,5 +1,5 @@
 #include "Material.hpp"
-#include "SOIL.h"
+#include <SOIL/SOIL.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 

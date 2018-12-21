@@ -16,12 +16,14 @@ lib linking flags on windows
     -lSOIL -lassimp.dll -lglew32 -lglu32 -lglfw3 -lopengl32 -lglu32 -lgdi32 -luser32 -lkernel32
     
 
-on ubuntu 
+on ubuntu 18.04, installing dependencies and compiling
 
     sudo apt install libassimp-dev
     sudo apt install libglm-dev
     sudo apt install libsoil-dev
     sudo apt install libglfw3-dev
+    sudo apt install libglew-dev
+    g++ -o main *.cpp -lglfw -lGLEW -lGLU -lGL -lSOIL -lassimp
 
 
 ![alt tag](http://2.bp.blogspot.com/-7rERDEBI7t8/UqRflZhDDCI/AAAAAAAAC34/vL0Gz37jiRE/s1600/fixed-material-manager-objects.jpg)
