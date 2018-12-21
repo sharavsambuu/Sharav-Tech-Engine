@@ -23,7 +23,10 @@ on ubuntu 18.04, installing dependencies and compiling
     sudo apt install libsoil-dev
     sudo apt install libglfw3-dev
     sudo apt install libglew-dev
+
     g++ -o main *.cpp -lglfw -lGLEW -lGLU -lGL -lSOIL -lassimp
+
+    ./compile.sh && ./main
 
 
 ![alt tag](http://2.bp.blogspot.com/-7rERDEBI7t8/UqRflZhDDCI/AAAAAAAAC34/vL0Gz37jiRE/s1600/fixed-material-manager-objects.jpg)
